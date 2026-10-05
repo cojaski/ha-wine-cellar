@@ -42,7 +42,7 @@ from . import photos
 from .disposition import recompute_all
 from .vivino import VivinoClient
 from .vivino_account import VivinoAccountClient, async_sync_from_vivino
-from .websocket import async_register_websocket_commands
+from .websocket import async_register_websocket_commands, schedule_vivino_id_repair
 from .wine_storage import WineCellarStorage
 
 _LOGGER = logging.getLogger(__name__)
@@ -406,6 +406,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # AI or manual intervention. See disposition.py for the rule and why
     # this can't just run once at add-time.
     _setup_disposition_recompute(hass, entry, storage)
+
+    # Check stored Vivino ids against the wines they name (once per cellar).
+    schedule_vivino_id_repair(hass)
 
     # Register services
     await _async_register_services(hass, storage, vivino)

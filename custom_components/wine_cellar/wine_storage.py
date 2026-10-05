@@ -30,6 +30,9 @@ _LOGGER = logging.getLogger(__name__)
 # recorded under this top-level key once done.
 CONF_CLEANUPS_DONE = "cleanups_done"
 CLEANUP_VIVINO_EXPLORE = "vivino_explore_trending_v1"
+# Done by websocket.async_repair_wrong_vivino_ids, which needs Vivino itself
+# and so runs after setup rather than in _migrate().
+CLEANUP_VIVINO_WRONG_IDS = "vivino_wrong_ids_v1"
 
 # A Vivino id shared by this many differently-named wines cannot be a real
 # match for all of them: it is one of the explore API's trending wines that
@@ -107,7 +110,7 @@ class WineCellarStorage:
                 CONF_WINE_HISTORY: [],
                 CONF_SETTINGS: {},
                 # A new cellar has no old bad data to repair.
-                CONF_CLEANUPS_DONE: [CLEANUP_VIVINO_EXPLORE],
+                CONF_CLEANUPS_DONE: [CLEANUP_VIVINO_EXPLORE, CLEANUP_VIVINO_WRONG_IDS],
             }
             await self.async_save()
         else:
@@ -506,6 +509,14 @@ class WineCellarStorage:
         return self.update_wine(
             wine_id, {"cabinet_id": cabinet_id, "row": row, "col": col, "zone": zone, "depth": depth}
         )
+
+    def is_cleanup_done(self, name: str) -> bool:
+        return name in self._data.get(CONF_CLEANUPS_DONE, [])
+
+    def mark_cleanup_done(self, name: str) -> None:
+        done = self._data.setdefault(CONF_CLEANUPS_DONE, [])
+        if name not in done:
+            done.append(name)
 
     def get_wine(self, wine_id: str) -> dict[str, Any] | None:
         """Get a single wine by ID."""
@@ -939,8 +950,9 @@ class WineCellarStorage:
         # A backup written before the Vivino search fix carries the same bad
         # matches the live data had, so the one-off cleanup runs again on it.
         done = self._data.get(CONF_CLEANUPS_DONE, [])
-        if CLEANUP_VIVINO_EXPLORE in done:
-            done.remove(CLEANUP_VIVINO_EXPLORE)
+        for cleanup in (CLEANUP_VIVINO_EXPLORE, CLEANUP_VIVINO_WRONG_IDS):
+            if cleanup in done:
+                done.remove(cleanup)
         self._migrate()
         return {
             "wines": len(wines),

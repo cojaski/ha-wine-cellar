@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
+import unicodedata
 from datetime import datetime, timezone
 from typing import Any
 
@@ -45,6 +47,7 @@ from .const import (
 )
 from . import photos
 from .disposition import compute_disposition
+from .wine_storage import CLEANUP_VIVINO_WRONG_IDS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,11 +61,48 @@ _GENERIC_WINE_WORDS = {
     "rouge", "blanc", "rose", "rosé", "red", "white", "sparkling", "nv",
     "de", "du", "des", "la", "le", "les", "et", "the", "of", "and",
     "grand", "cru", "premier",
+    "family", "maison", "tenuta", "fattoria", "quinta", "bodega", "bodegas",
+    "weingut", "cantina", "azienda", "agricola", "vintners",
 }
+
+# Grape varieties, longest first so "cabernet sauvignon" is taken before
+# "sauvignon blanc" could claim its second word. Two wines that each name a
+# variety and share none are different wines, whatever else they share.
+_GRAPE_VARIETIES = sorted(
+    (
+        "cabernet sauvignon", "cabernet franc", "sauvignon blanc", "pinot noir",
+        "pinot gris", "pinot grigio", "pinot blanc", "pinot meunier",
+        "petite sirah", "petit verdot", "chenin blanc", "gruner veltliner",
+        "merlot", "malbec", "syrah", "shiraz", "zinfandel", "primitivo",
+        "grenache", "garnacha", "mourvedre", "tempranillo", "sangiovese",
+        "nebbiolo", "barbera", "carmenere", "chardonnay", "riesling",
+        "gewurztraminer", "viognier", "roussanne", "marsanne", "albarino",
+        "semillon", "moscato", "muscat", "gamay", "carignan", "tannat",
+    ),
+    key=len,
+    reverse=True,
+)
+
+
+def _fold(text: str) -> str:
+    """Lowercase, strip accents and turn punctuation into spaces, so
+    "Raíces", "Stag's" and "Saint-Hilaire" compare like plain words."""
+    text = unicodedata.normalize("NFKD", text or "").encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]+", " ", text.lower())
+
+
+def _grapes(text: str) -> set[str]:
+    folded = f" {_fold(text)} "
+    found = set()
+    for grape in _GRAPE_VARIETIES:
+        if f" {grape} " in folded:
+            found.add(grape)
+            folded = folded.replace(f" {grape} ", " ")
+    return found
 
 
 def _significant_words(text: str) -> set[str]:
-    return {w for w in text.lower().split() if w not in _GENERIC_WINE_WORDS and len(w) > 2}
+    return {w for w in _fold(text).split() if w not in _GENERIC_WINE_WORDS and len(w) > 2}
 
 
 def _get_metadata_language(hass: HomeAssistant) -> str:
@@ -293,17 +333,145 @@ def _vivino_match_is_trustworthy(subject: dict[str, Any], lookup: dict[str, Any]
     same name (e.g. "Bronzinelle"), so name/winery overlap alone isn't
     enough to tell them apart. Better to report no match at all than to
     confidently apply the wrong variant's photo/description/rating.
+
+    Word overlap alone let a grape or appellation stand in for the wine
+    itself ("Caymus Cabernet Sauvignon" matched "Hundred Acre Wraith
+    Cabernet Sauvignon"; "... Stags Leap District" matched another
+    producer's Stags Leap District), so two more checks apply: the
+    producer has to be recognisable on both sides, and two wines naming
+    different grape varieties are never the same wine.
     """
     subject_type = subject.get("type")
     lookup_type = lookup.get("type")
     if subject_type and lookup_type and subject_type != lookup_type:
         return False
-    subject_words = _significant_words(f"{subject.get('winery', '')} {subject.get('name', '')}")
-    lookup_words = _significant_words(f"{lookup.get('winery', '')} {lookup.get('name', '')}")
+    subject_text = f"{subject.get('winery') or ''} {subject.get('name') or ''}"
+    lookup_text = f"{lookup.get('winery') or ''} {lookup.get('name') or ''}"
+    subject_words = _significant_words(subject_text)
+    lookup_words = _significant_words(lookup_text)
     if not subject_words or not lookup_words:
         return True
+
+    # Producer: the subject's winery shows up somewhere in the match, or the
+    # match's winery shows up somewhere in the subject. Either direction is
+    # enough, since a label brand often sits under a parent winery on Vivino
+    # ("Via Barrosa" under "Viña Costeira") or the other way round.
+    subject_producer = _significant_words(subject.get("winery") or "")
+    lookup_producer = _significant_words(lookup.get("winery") or "")
+    if subject_producer and lookup_producer and not (
+        subject_producer & lookup_words or lookup_producer & subject_words
+    ):
+        return False
+
+    subject_grapes = _grapes(subject_text)
+    lookup_grapes = _grapes(lookup_text)
+    if subject_grapes and lookup_grapes and not subject_grapes & lookup_grapes:
+        return False
+
     overlap = len(subject_words & lookup_words) / len(subject_words | lookup_words)
     return overlap >= 0.15
+
+
+def _wrong_vivino_id_reset(wine: dict[str, Any]) -> dict[str, Any]:
+    """Updates that drop what a wrong vivino_id brought onto `wine`.
+
+    A stored id that names another wine means its rating, ratings count
+    and Vivino photo are that other wine's, and so, most likely, is the
+    retail price (the explore API that made these matches supplied one).
+    The price goes too: a refresh only fills an empty price, so a wrong one
+    would otherwise stay forever. The user's own photo and rating
+    (`user_rating`) are untouched.
+    """
+    updates: dict[str, Any] = {
+        "vivino_id": "",
+        "rating": None,
+        "ratings_count": None,
+        "retail_price": None,
+        "retail_price_currency": None,
+        "vivino_updated_at": None,
+        "vivino_checked_at": None,
+    }
+    if "vivino" in str(wine.get("image_url") or ""):
+        updates["image_url"] = ""
+    return updates
+
+
+async def _async_drop_wrong_vivino_id(
+    storage: Any, wine: dict[str, Any], lookup: dict[str, Any]
+) -> dict[str, Any]:
+    """Clear a vivino_id that names another wine, on this bottle and its
+    duplicates, and return the wine as it now stands."""
+    _LOGGER.warning(
+        "Vivino id %s on '%s %s' is '%s %s', not this wine; clearing it and its data",
+        wine.get("vivino_id"), wine.get("winery") or "", wine.get("name") or "",
+        lookup.get("winery") or "", lookup.get("name") or "",
+    )
+    reset = _wrong_vivino_id_reset(wine)
+    updated = storage.update_wine(wine["id"], reset) or wine
+    _propagate_to_duplicates(storage, updated, reset)
+    await storage.async_save()
+    return updated
+
+
+async def async_repair_wrong_vivino_ids(
+    hass: HomeAssistant, storage: Any, vivino: Any
+) -> None:
+    """One-off: check every stored vivino_id against the wine it names.
+
+    The startup cleanup in wine_storage.py could only spot a wrong id shared
+    by several differently-named wines; one that landed on a single wine
+    (Pestoni carrying Colgin's id, say) looked like any other. Telling those
+    apart needs Vivino itself, so this runs once in the background after
+    setup. Bottles from the user's own Vivino account are skipped (their id
+    is the sync key). If Vivino can't be reached at all, nothing is marked
+    done and it tries again on the next start.
+    """
+    if storage.is_cleanup_done(CLEANUP_VIVINO_WRONG_IDS):
+        return
+    wines = [
+        w for w in storage.wines
+        if w.get("vivino_id") and not str(w.get("source", "")).startswith("vivino")
+    ]
+    ids = {str(w["vivino_id"]) for w in wines}
+    semaphore = asyncio.Semaphore(4)
+
+    async def fetch(vid: str) -> tuple[str, dict[str, Any] | None]:
+        async with semaphore:
+            return vid, await vivino.get_wine_by_id(vid)
+
+    found = dict(await asyncio.gather(*(fetch(vid) for vid in ids)))
+    if ids and not any(found.values()):
+        _LOGGER.debug("Vivino id check: Vivino unreachable, will retry next start")
+        return
+
+    for wine in wines:
+        current = storage.get_wine(wine["id"])
+        # A duplicate may already have been repaired along with its twin.
+        if not current or not current.get("vivino_id"):
+            continue
+        lookup = found.get(str(current["vivino_id"]))
+        if lookup and not _vivino_match_is_trustworthy(current, lookup):
+            await _async_drop_wrong_vivino_id(storage, current, lookup)
+    repaired = sum(1 for w in wines if not w.get("vivino_id"))
+
+    storage.mark_cleanup_done(CLEANUP_VIVINO_WRONG_IDS)
+    await storage.async_save()
+    if repaired:
+        _LOGGER.warning(
+            "Vivino id check: cleared wrong Vivino data on %d wine(s); "
+            "a Vivino refresh will look them up again",
+            repaired,
+        )
+        hass.bus.async_fire(f"{DOMAIN}_updated")
+
+
+def schedule_vivino_id_repair(hass: HomeAssistant) -> None:
+    """Run async_repair_wrong_vivino_ids in the background (a no-op once done)."""
+    data = hass.data[DOMAIN]
+    hass.async_create_background_task(
+        async_repair_wrong_vivino_ids(hass, data["storage"], data["vivino"]),
+        "wine_cellar_vivino_id_repair",
+    )
 
 
 def _apply_vivino_text_fields(
@@ -1277,15 +1445,13 @@ async def ws_refresh_wine(
     if wine.get("vivino_id") and not _is_whisky(wine):
         lookup = await vivino.get_wine_by_id(wine["vivino_id"], wine.get("vintage"), language)
         if lookup and not _vivino_match_is_trustworthy(wine, lookup):
-            # The stored vivino_id itself points at the wrong variant (e.g.
-            # it was matched to the rosé of a name a producer also sells as
+            # The stored vivino_id itself names another wine (another
+            # producer's, or the rosé of a name a producer also sells as
             # red/white) — a by-id lookup has no query to re-check against,
             # so this is caught here instead of before it's ever stored.
-            # Don't keep it; fall through to a fresh text search below.
-            _LOGGER.debug(
-                "Vivino by-id lookup for '%s' has the wrong type (%s), re-searching",
-                query, lookup.get("type"),
-            )
+            # Drop it along with the data it brought (price included, which
+            # the merge below would otherwise keep) and re-search.
+            wine = await _async_drop_wrong_vivino_id(storage, wine, lookup)
             lookup = None
 
     if not lookup and not _is_whisky(wine):
@@ -1665,12 +1831,9 @@ async def ws_batch_refresh_vivino(
                 lookup = await vivino.get_wine_by_id(wine["vivino_id"], wine.get("vintage"), language)
                 if lookup and not _vivino_match_is_trustworthy(wine, lookup):
                     # Same guard as the single-wine refresh: a stored
-                    # vivino_id can point at the wrong same-name variant
-                    # (e.g. rosé instead of red) — discard it and re-search.
-                    _LOGGER.debug(
-                        "Batch Vivino: by-id lookup for '%s' has the wrong type (%s), re-searching",
-                        query, lookup.get("type"),
-                    )
+                    # vivino_id can name another wine — drop it and what it
+                    # brought, then re-search.
+                    wine = await _async_drop_wrong_vivino_id(storage, wine, lookup)
                     lookup = None
 
             if not lookup and not _is_whisky(wine):
@@ -2214,6 +2377,7 @@ async def ws_restore_backup(
     await photos.prune(hass, storage.wines, storage.wine_history, storage.buy_list)
     await storage.async_save()
     hass.bus.async_fire(f"{DOMAIN}_updated")
+    schedule_vivino_id_repair(hass)
 
     _LOGGER.info(
         "Backup restored: %d wines, %d cabinets, %d buy list items",
@@ -2539,6 +2703,7 @@ async def ws_server_backup_restore(
         counts = storage.restore_data(wines, cabinets, buy_list, wine_history, settings)
         await storage.async_save()
         hass.bus.async_fire(f"{DOMAIN}_updated")
+        schedule_vivino_id_repair(hass)
 
         _LOGGER.info(
             "Server restore from %s: %d wines, %d cabinets, %d buy list items",
