@@ -15624,6 +15624,12 @@ let InventoryDialog = class InventoryDialog extends i$1 {
             this._editingHistoryId = "";
             this._showPairingPicker = this.pairingMode;
         }
+        // A Pairings visit is a one-off lookup: leaving it (✕, backdrop, or
+        // jumping to a bottle) must not leave its food filter saved for the
+        // next plain Inventory open.
+        if (changedProps.has("open") && !this.open && this.pairingMode) {
+            this._clearFilters();
+        }
     }
     _close() {
         this.open = false;
@@ -17682,11 +17688,24 @@ InventoryDialog.styles = [
         align-items: center;
       }
 
+      /* One height for the whole sort row. The select drops its native
+         appearance because Safari otherwise ignores height on it. */
+      .inv-sort select,
+      .inv-sort-dir,
+      .inv-filter-toggle {
+        box-sizing: border-box;
+        height: 32px;
+      }
+
       .inv-sort select {
-        padding: 6px 10px;
+        -webkit-appearance: none;
+        appearance: none;
+        padding: 0 26px 0 12px;
         border: 1px solid var(--wc-border);
         border-radius: 14px;
-        background: var(--wc-bg);
+        background: var(--wc-bg)
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+          no-repeat right 10px center;
         color: var(--wc-text);
         font-size: 0.8em;
         cursor: pointer;
@@ -17696,7 +17715,7 @@ InventoryDialog.styles = [
         background: none;
         border: 1px solid var(--wc-border);
         border-radius: 14px;
-        padding: 5px 9px;
+        padding: 0 9px;
         cursor: pointer;
         font-size: 0.8em;
         color: var(--wc-text-secondary);
@@ -17711,7 +17730,7 @@ InventoryDialog.styles = [
         background: none;
         border: 1px solid var(--wc-border);
         border-radius: 14px;
-        padding: 5px 10px;
+        padding: 0 10px;
         cursor: pointer;
         font-size: 0.8em;
         color: var(--wc-text-secondary);
@@ -20844,7 +20863,11 @@ let WineCellarCard = class WineCellarCard extends i$1 {
             this._addPreselect = { cabinet: "", row: null, col: null, zone: "", depth: 0 };
             this._showAddDialog = true;
         }}
+              style="display: inline-flex; align-items: center; gap: 4px;"
             >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" fill-rule="evenodd" aria-hidden="true">
+                <path d="M10 2h4v1h-.5v4.2c0 .9.5 1.7 1.2 2.2A4.5 4.5 0 0 1 16.5 13v8a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-8a4.5 4.5 0 0 1 1.8-3.6c.7-.5 1.2-1.3 1.2-2.2V3H10V2zm-1 12v4h6v-4H9z" />
+              </svg>
               ${this._t("ui.card.addWineBtn")}
             </button>
           </div>

@@ -2614,7 +2614,11 @@ export class WineCellarCard extends LitElement {
                 this._addPreselect = { cabinet: "", row: null, col: null, zone: "", depth: 0 };
                 this._showAddDialog = true;
               }}
+              style="display: inline-flex; align-items: center; gap: 4px;"
             >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" fill-rule="evenodd" aria-hidden="true">
+                <path d="M10 2h4v1h-.5v4.2c0 .9.5 1.7 1.2 2.2A4.5 4.5 0 0 1 16.5 13v8a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-8a4.5 4.5 0 0 1 1.8-3.6c.7-.5 1.2-1.3 1.2-2.2V3H10V2zm-1 12v4h6v-4H9z" />
+              </svg>
               ${this._t("ui.card.addWineBtn")}
             </button>
           </div>

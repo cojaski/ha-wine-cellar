@@ -384,11 +384,24 @@ export class InventoryDialog extends LitElement {
         align-items: center;
       }
 
+      /* One height for the whole sort row. The select drops its native
+         appearance because Safari otherwise ignores height on it. */
+      .inv-sort select,
+      .inv-sort-dir,
+      .inv-filter-toggle {
+        box-sizing: border-box;
+        height: 32px;
+      }
+
       .inv-sort select {
-        padding: 6px 10px;
+        -webkit-appearance: none;
+        appearance: none;
+        padding: 0 26px 0 12px;
         border: 1px solid var(--wc-border);
         border-radius: 14px;
-        background: var(--wc-bg);
+        background: var(--wc-bg)
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+          no-repeat right 10px center;
         color: var(--wc-text);
         font-size: 0.8em;
         cursor: pointer;
@@ -398,7 +411,7 @@ export class InventoryDialog extends LitElement {
         background: none;
         border: 1px solid var(--wc-border);
         border-radius: 14px;
-        padding: 5px 9px;
+        padding: 0 9px;
         cursor: pointer;
         font-size: 0.8em;
         color: var(--wc-text-secondary);
@@ -413,7 +426,7 @@ export class InventoryDialog extends LitElement {
         background: none;
         border: 1px solid var(--wc-border);
         border-radius: 14px;
-        padding: 5px 10px;
+        padding: 0 10px;
         cursor: pointer;
         font-size: 0.8em;
         color: var(--wc-text-secondary);
@@ -1040,6 +1053,12 @@ export class InventoryDialog extends LitElement {
       this._buyAgainOnly = false;
       this._editingHistoryId = "";
       this._showPairingPicker = this.pairingMode;
+    }
+    // A Pairings visit is a one-off lookup: leaving it (✕, backdrop, or
+    // jumping to a bottle) must not leave its food filter saved for the
+    // next plain Inventory open.
+    if (changedProps.has("open") && !this.open && this.pairingMode) {
+      this._clearFilters();
     }
   }
 
