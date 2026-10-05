@@ -1,6 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { sharedStyles, touchStyles } from "../styles";
+import { sharedStyles, touchStyles, typeChipStyles } from "../styles";
+import { typeChipStyle } from "../models";
 import { t } from "../i18n";
 
 @customElement("wine-search-bar")
@@ -12,6 +13,7 @@ export class WineSearchBar extends LitElement {
 
   static styles = [
     sharedStyles,
+    typeChipStyles,
     css`
       :host {
         display: block;
@@ -51,14 +53,16 @@ export class WineSearchBar extends LitElement {
         border: 1px solid var(--wc-border);
         border-radius: 20px;
         font-size: 0.9em;
-        background: var(--wc-bg);
+        background: var(--wc-field-bg);
+        box-shadow: var(--wc-sheen);
         color: var(--wc-text);
         box-sizing: border-box;
-        transition: border-color 0.2s;
+        transition: border-color 0.2s, box-shadow 0.2s;
       }
 
       input:focus {
-        border-color: var(--wc-primary);
+        border-color: var(--wc-primary-text);
+        box-shadow: 0 0 0 3px rgba(154, 74, 84, 0.2);
         outline: none;
       }
 
@@ -109,29 +113,7 @@ export class WineSearchBar extends LitElement {
       .filter-chips {
         display: flex;
         flex-wrap: wrap;
-        gap: 4px;
-      }
-
-      .chip {
-        padding: 4px 10px;
-        border-radius: 14px;
-        border: 1px solid var(--wc-border);
-        background: transparent;
-        color: var(--wc-text-secondary);
-        cursor: pointer;
-        font-size: 0.75em;
-        transition: all 0.2s;
-        white-space: nowrap;
-      }
-
-      .chip:hover {
-        background: rgba(114, 47, 55, 0.08);
-      }
-
-      .chip.active {
-        background: var(--wc-primary);
-        color: #fff;
-        border-color: var(--wc-primary);
+        gap: 6px;
       }
 
       /* Touch: room for the 44px clear button inside the field. */
@@ -230,7 +212,8 @@ export class WineSearchBar extends LitElement {
           ${filters.map(
             (f) => html`
               <button
-                class="chip ${this.filter === f.id ? "active" : ""}"
+                class="type-chip ${f.id === "all" ? "all" : ""} ${this.filter === f.id ? "active" : ""}"
+                style=${typeChipStyle(f.id)}
                 @click=${() => this._onFilterChange(f.id)}
               >
                 ${f.label}

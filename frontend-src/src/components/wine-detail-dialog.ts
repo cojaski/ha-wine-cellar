@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Wine, Cabinet, TastingNotes, getWineTypeLabels, getSelectableWineTypes, WINE_TYPE_COLORS, WineType, getRemovalReasons, getWineLocation, producerLabel, varietyLabel } from "../models";
-import { sharedStyles, touchStyles } from "../styles";
+import { sharedStyles, touchStyles, dialogClose } from "../styles";
 import { resizeImageForStorage } from "../utils/image";
 import { t } from "../i18n";
 import { getChamberingAdvice, formatDuration, formatServingTemp, usesFahrenheit } from "../utils/chambering";
@@ -65,7 +65,10 @@ export class WineDetailDialog extends LitElement {
         justify-content: flex-end;
         align-items: center;
         gap: 4px;
-        padding: 8px 12px 0;
+        /* Right padding leaves the corner to the shared ✕ (dialogClose),
+           which lines up with this bar: 12px down, 36px tall. */
+        min-height: 36px;
+        padding: 12px 56px 0 12px;
       }
 
       .icon-btn {
@@ -84,10 +87,6 @@ export class WineDetailDialog extends LitElement {
         background: rgba(255, 255, 255, 0.1);
       }
 
-      .icon-btn.close-btn {
-        font-size: 1.3em;
-        font-weight: 600;
-      }
 
       .wine-header {
         display: flex;
@@ -462,7 +461,7 @@ export class WineDetailDialog extends LitElement {
         border-radius: 8px;
         resize: vertical;
         min-height: 50px;
-        background: var(--wc-bg);
+        background: var(--wc-field-bg);
         color: var(--wc-text);
       }
 
@@ -625,7 +624,7 @@ export class WineDetailDialog extends LitElement {
         border: 1px solid var(--wc-border);
         border-radius: 8px;
         font-size: 0.9em;
-        background: var(--wc-bg);
+        background: var(--wc-field-bg);
         color: var(--wc-text);
         box-sizing: border-box;
         font-family: inherit;
@@ -666,6 +665,28 @@ export class WineDetailDialog extends LitElement {
         }
         .edit-form .form-row {
           grid-template-columns: 1fr;
+        }
+        /* Photo column capped at the photo's own width (a photo that fails
+           to load would otherwise widen it to its alt text), and the header
+           padding trimmed, so the name/rating column keeps enough room for
+           the 5 stars on a 360px phone. */
+        .wine-header {
+          padding: 4px 16px 16px;
+          gap: 12px;
+        }
+        .wine-image-col {
+          max-width: 135px;
+        }
+      }
+
+      @media (max-width: 400px) {
+        .wine-image,
+        .wine-image-placeholder {
+          width: 100px;
+          height: 145px;
+        }
+        .wine-image-col {
+          max-width: 100px;
         }
       }
 
@@ -1473,11 +1494,11 @@ export class WineDetailDialog extends LitElement {
     return html`
       <div class="dialog-overlay" @click=${this._close}>
         <div class="dialog" style="position:relative" @click=${(e: Event) => e.stopPropagation()}>
+          ${dialogClose(this._close, this._t('ui.common.close'))}
           <div class="dialog-top-bar">
             ${this.mode !== "winelist"
               ? html`<button class="icon-btn" title="${this._t('ui.common.edit')}" @click=${this._startEditingFields}>✏️</button>`
               : nothing}
-            <button class="icon-btn close-btn" title="${this._t('ui.common.close')}" @click=${this._close}>✕</button>
           </div>
           <div class="wine-header">
             <div class="wine-image-col">
@@ -1567,7 +1588,7 @@ export class WineDetailDialog extends LitElement {
                 : nothing}
               ${this.mode !== "winelist"
                 ? html`
-                    <div style="display:flex;align-items:center;gap:6px;margin-top:4px;font-size:0.9em">
+                    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px;margin-top:4px;font-size:0.9em">
                       <span style="font-size:0.8em;color:var(--wc-text-secondary)">${this._t('ui.wineDetail.myRating')}</span>
                       <star-rating
                         .value=${this._userRating}
@@ -1868,7 +1889,7 @@ export class WineDetailDialog extends LitElement {
                 </div>
                 <textarea
                   rows="3"
-                  style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--wc-border);background:var(--wc-surface, transparent);color:var(--wc-text);font:inherit;font-size:0.85em;resize:vertical"
+                  style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--wc-border);background:var(--wc-field-bg);color:var(--wc-text);font:inherit;font-size:0.85em;resize:vertical"
                   placeholder="${this._t("ui.wineDetail.drinkNotesPlaceholder")}"
                   .value=${this._drinkNotes}
                   @input=${(e: Event) => (this._drinkNotes = (e.target as HTMLTextAreaElement).value)}

@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Cabinet, Wine, StorageRow, getStorageRowTypeLabels, BOX_SIZES, getSteppedLevels } from "../models";
-import { sharedStyles, touchStyles } from "../styles";
+import { sharedStyles, touchStyles, dialogClose } from "../styles";
 import { t } from "../i18n";
 
 type Mode = "list" | "add" | "edit" | "delete-confirm";
@@ -374,7 +374,7 @@ export class RackSettingsDialog extends LitElement {
         border: 1px solid var(--wc-border);
         border-radius: 4px;
         font-size: 0.8em;
-        background: var(--wc-bg);
+        background: var(--wc-field-bg);
         color: var(--wc-text);
         cursor: pointer;
       }
@@ -385,7 +385,7 @@ export class RackSettingsDialog extends LitElement {
         border: 1px solid var(--wc-border);
         border-radius: 4px;
         font-size: 0.8em;
-        background: var(--wc-bg);
+        background: var(--wc-field-bg);
         color: var(--wc-text);
         flex-shrink: 1;
         min-width: 60px;
@@ -396,7 +396,7 @@ export class RackSettingsDialog extends LitElement {
         border: 1px solid var(--wc-border);
         border-radius: 4px;
         font-size: 0.8em;
-        background: var(--wc-bg);
+        background: var(--wc-field-bg);
         color: var(--wc-text);
         cursor: pointer;
       }
@@ -423,7 +423,7 @@ export class RackSettingsDialog extends LitElement {
         border: 1px solid var(--wc-border);
         border-radius: 4px;
         font-size: 0.85em;
-        background: var(--wc-bg);
+        background: var(--wc-field-bg);
         color: var(--wc-text);
         cursor: pointer;
       }
@@ -434,7 +434,7 @@ export class RackSettingsDialog extends LitElement {
         border: 1px solid var(--wc-border);
         border-radius: 4px;
         font-size: 0.8em;
-        background: var(--wc-bg);
+        background: var(--wc-field-bg);
         color: var(--wc-text);
         text-align: center;
       }
@@ -450,7 +450,7 @@ export class RackSettingsDialog extends LitElement {
         height: 20px;
         border: 1px solid var(--wc-border);
         border-radius: 4px;
-        background: var(--wc-bg);
+        background: var(--wc-field-bg);
         color: var(--wc-text);
         cursor: pointer;
         font-size: 0.8em;
@@ -483,7 +483,7 @@ export class RackSettingsDialog extends LitElement {
         border: 1px solid var(--wc-border);
         border-radius: 4px;
         font-size: 0.85em;
-        background: var(--wc-bg);
+        background: var(--wc-field-bg);
         color: var(--wc-text);
       }
 
@@ -524,6 +524,24 @@ export class RackSettingsDialog extends LitElement {
         border-color: #c62828;
         color: #c62828;
         background: rgba(198, 40, 40, 0.05);
+      }
+
+      /* Rows / Columns / Depth side by side need ~360px at full size; on a
+         small phone they ran past the sheet's edge. Slimmer buttons and a
+         narrower value cell keep all three on one line. */
+      @media (max-width: 400px) {
+        .stepper-row {
+          gap: 8px;
+        }
+        .stepper-wrap {
+          min-width: 0;
+        }
+        .stepper-btn {
+          width: 30px;
+        }
+        .stepper-value {
+          min-width: 26px;
+        }
       }
     `,
     touchStyles,
@@ -1701,6 +1719,7 @@ export class RackSettingsDialog extends LitElement {
     return html`
       <div class="dialog-overlay" @click=${this._close}>
         <div class="dialog" @click=${(e: Event) => e.stopPropagation()}>
+          ${dialogClose(this._close, this._t('ui.common.close'))}
           <div class="dialog-header">${titles[this._mode]}</div>
           ${this._mode === "list" ? this._renderList() : nothing}
           ${this._mode === "add" || this._mode === "edit"
