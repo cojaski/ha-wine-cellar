@@ -4,7 +4,7 @@ import { Wine, Cabinet, TastingNotes, getWineTypeLabels, getSelectableWineTypes,
 import { sharedStyles, touchStyles } from "../styles";
 import { resizeImageForStorage } from "../utils/image";
 import { t } from "../i18n";
-import { getChamberingAdvice, formatDuration } from "../utils/chambering";
+import { getChamberingAdvice, formatDuration, formatServingTemp, usesFahrenheit } from "../utils/chambering";
 import "./star-rating";
 import "./label-camera";
 
@@ -735,7 +735,9 @@ export class WineDetailDialog extends LitElement {
       peak_window: this.wine.peak_window || "",
       notes: this.wine.notes || "",
       alcohol: this.wine.alcohol || "",
-      serving_temp: this.wine.serving_temp || "",
+      // Edited in the unit Home Assistant uses (°F in a US home); see
+      // _saveFields for how an untouched value keeps its stored text.
+      serving_temp: formatServingTemp(this.wine.serving_temp, this.hass),
     };
     const windowStart = (this.wine.drink_window || "").match(/\b(?:19|20)\d{2}\b/);
     this._editDrinkFrom = windowStart ? windowStart[0] : "";
@@ -791,6 +793,11 @@ export class WineDetailDialog extends LitElement {
       else updates.price = parseFloat(updates.price) || null;
       if (updates.retail_price === "" || updates.retail_price === null) updates.retail_price = null;
       else updates.retail_price = parseFloat(updates.retail_price) || null;
+      // The field showed the stored °C value converted for display; if it
+      // wasn't touched, keep the stored text rather than rewriting it.
+      if (updates.serving_temp === formatServingTemp(this.wine.serving_temp, this.hass)) {
+        updates.serving_temp = this.wine.serving_temp || "";
+      }
 
       if (this.mode === "buylist") {
         await this.hass.callWS({
@@ -1410,7 +1417,7 @@ export class WineDetailDialog extends LitElement {
           </div>
           <div class="form-group">
             <label>${this._t("ui.wineDetail.servingTempLabel")}</label>
-            <input type="text" .value=${d.serving_temp} placeholder="${this._t('ui.wineDetail.servingTempPlaceholder')}"
+            <input type="text" .value=${d.serving_temp} placeholder="${this._t(usesFahrenheit(this.hass) ? 'ui.wineDetail.servingTempPlaceholderF' : 'ui.wineDetail.servingTempPlaceholder')}"
               @input=${(e: Event) => this._updateEditField("serving_temp", (e.target as HTMLInputElement).value)} />
           </div>
         </div>
@@ -1687,7 +1694,7 @@ export class WineDetailDialog extends LitElement {
                           ? html`<span class="info-chip"><span class="info-chip-icon">%</span> ${wine.alcohol}</span>`
                           : nothing}
                         ${wine.serving_temp
-                          ? html`<span class="info-chip"><span class="info-chip-icon">🌡️</span> ${wine.serving_temp}</span>`
+                          ? html`<span class="info-chip"><span class="info-chip-icon">🌡️</span> ${formatServingTemp(wine.serving_temp, this.hass)}</span>`
                           : nothing}
                         ${wine.food_pairings
                           ? this._splitPairings(wine.food_pairings).map(

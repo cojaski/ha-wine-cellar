@@ -810,6 +810,12 @@ export class CabinetGrid extends LitElement {
     );
   }
 
+  // The sensor's own unit (°F in a US home), not an assumed °C.
+  private _tempUnit(): string {
+    const id = this.cabinet.temp_sensor_entity_id || "";
+    return this.hass?.states?.[id]?.attributes?.unit_of_measurement || "°C";
+  }
+
   // Live temperature/humidity of the zone, shown in its title banner.
   private _renderSensorBadge() {
     const temp = readSensorValue(this.hass, this.cabinet.temp_sensor_entity_id || "");
@@ -817,7 +823,7 @@ export class CabinetGrid extends LitElement {
     if (temp === null && humidity === null) return nothing;
     return html`
       <span class="zone-sensor-badge">
-        ${temp !== null ? html`🌡️ ${temp}°C` : nothing}${temp !== null && humidity !== null ? " · " : nothing}${humidity !== null ? html`💧 ${humidity}%` : nothing}
+        ${temp !== null ? html`🌡️ ${temp}${this._tempUnit()}` : nothing}${temp !== null && humidity !== null ? " · " : nothing}${humidity !== null ? html`💧 ${humidity}%` : nothing}
       </span>
     `;
   }

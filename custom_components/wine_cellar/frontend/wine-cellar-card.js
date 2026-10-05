@@ -1369,6 +1369,7 @@ var ui$1 = {
 		alcoholPlaceholder: "e.g. 13.5%",
 		servingTempLabel: "Serving temp.",
 		servingTempPlaceholder: "e.g. 16-18°C",
+		servingTempPlaceholderF: "e.g. 61-64°F",
 		purchaseDateLabel: "Purchase Date",
 		drinkFromLabel: "Drink From",
 		drinkFromPlaceholder: "e.g. 2025",
@@ -2202,6 +2203,7 @@ var ui = {
 		alcoholPlaceholder: "ex. 13,5 %",
 		servingTempLabel: "Température idéale",
 		servingTempPlaceholder: "ex. 16-18°C",
+		servingTempPlaceholderF: "ex. 61-64°F",
 		purchaseDateLabel: "Date d'achat",
 		drinkFromLabel: "À boire à partir de",
 		drinkFromPlaceholder: "ex. 2025",
@@ -3869,7 +3871,8 @@ function readSensorValue(hass, entityId) {
     return Number.isFinite(value) ? value : null;
 }
 // Parses "16-18°C" / "16°C" / "16-18" / "16" — lenient on purpose since this
-// is an AI-filled free-text field, not a structured one.
+// is an AI-filled free-text field, not a structured one. Always returns °C:
+// a value marked °F (typed by hand in a US home) is converted.
 function parseServingTemp(servingTemp) {
     if (!servingTemp)
         return null;
@@ -3879,15 +3882,46 @@ function parseServingTemp(servingTemp) {
     const numbers = (servingTemp.match(/\d+(?:[.,]\d+)?/g) || []).map((n) => parseFloat(n.replace(",", ".")));
     if (numbers.length === 0 || numbers.some((n) => !Number.isFinite(n)))
         return null;
-    if (numbers.length === 1)
-        return { low: numbers[0], high: numbers[0] };
-    return { low: Math.min(numbers[0], numbers[1]), high: Math.max(numbers[0], numbers[1]) };
+    const toC = /°\s*F|\dF\b/i.test(servingTemp) ? fToC : (n) => n;
+    const [a, b] = numbers.length === 1 ? [numbers[0], numbers[0]] : [numbers[0], numbers[1]];
+    return { low: toC(Math.min(a, b)), high: toC(Math.max(a, b)) };
+}
+const cToF = (c) => (c * 9) / 5 + 32;
+const fToC = (f) => ((f - 32) * 5) / 9;
+// Whether temperatures should be shown in °F: Home Assistant's own unit
+// system (Settings > System > General), not anything the card configures.
+function usesFahrenheit(hass) {
+    return hass?.config?.unit_system?.temperature === "°F";
+}
+// A serving temperature for display, in the unit Home Assistant uses.
+// Stored values are °C (that's what the AI writes); text that doesn't parse
+// as a temperature is shown as typed.
+function formatServingTemp(servingTemp, hass) {
+    const range = parseServingTemp(servingTemp);
+    if (!range)
+        return servingTemp || "";
+    const f = usesFahrenheit(hass);
+    const show = (c) => String(Math.round(f ? cToF(c) : c));
+    const unit = f ? "°F" : "°C";
+    const low = show(range.low);
+    const high = show(range.high);
+    return low === high ? `${low}${unit}` : `${low}-${high}${unit}`;
+}
+// A temperature sensor's reading in °C, whatever unit it reports in. A US
+// Home Assistant reports °F, while serving temperatures and the warm-up
+// math below are in °C.
+function readTemperatureC(hass, entityId) {
+    const value = readSensorValue(hass, entityId);
+    if (value === null)
+        return null;
+    const unit = hass.states[entityId]?.attributes?.unit_of_measurement;
+    return unit === "°F" ? fToC(value) : value;
 }
 function getChamberingAdvice(wine, cabinet, hass, roomSensorEntityId, timeConstantMinutes, equilibrationHours) {
     const range = parseServingTemp(wine.serving_temp);
     if (!range)
         return null;
-    const cellarTemp = readSensorValue(hass, cabinet?.temp_sensor_entity_id || "");
+    const cellarTemp = readTemperatureC(hass, cabinet?.temp_sensor_entity_id || "");
     if (cellarTemp === null)
         return null;
     if (wine.location_updated_at) {
@@ -3909,7 +3943,7 @@ function getChamberingAdvice(wine, cabinet, hass, roomSensorEntityId, timeConsta
     // so reaching `target` takes t = tau * ln((room - cellar) / (room - target)).
     // A warmer room therefore means a shorter wait, and the bottle can never
     // pass the room temperature — a target at or above it is unreachable.
-    const roomTemp = readSensorValue(hass, roomSensorEntityId);
+    const roomTemp = readTemperatureC(hass, roomSensorEntityId);
     if (roomTemp === null || !(timeConstantMinutes > 0))
         return null;
     // Aim for the middle of the serving range; if the room is too close to (or
@@ -3985,6 +4019,11 @@ let CabinetGrid = class CabinetGrid extends i$1 {
     _getBottomZoneWines() {
         return this.wines.filter((w) => w.cabinet_id === this.cabinet.id && w.zone === "bottom");
     }
+    // The sensor's own unit (°F in a US home), not an assumed °C.
+    _tempUnit() {
+        const id = this.cabinet.temp_sensor_entity_id || "";
+        return this.hass?.states?.[id]?.attributes?.unit_of_measurement || "°C";
+    }
     // Live temperature/humidity of the zone, shown in its title banner.
     _renderSensorBadge() {
         const temp = readSensorValue(this.hass, this.cabinet.temp_sensor_entity_id || "");
@@ -3993,7 +4032,7 @@ let CabinetGrid = class CabinetGrid extends i$1 {
             return A$1;
         return b$1 `
       <span class="zone-sensor-badge">
-        ${temp !== null ? b$1 `🌡️ ${temp}°C` : A$1}${temp !== null && humidity !== null ? " · " : A$1}${humidity !== null ? b$1 `💧 ${humidity}%` : A$1}
+        ${temp !== null ? b$1 `🌡️ ${temp}${this._tempUnit()}` : A$1}${temp !== null && humidity !== null ? " · " : A$1}${humidity !== null ? b$1 `💧 ${humidity}%` : A$1}
       </span>
     `;
     }
@@ -6140,7 +6179,9 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
             peak_window: this.wine.peak_window || "",
             notes: this.wine.notes || "",
             alcohol: this.wine.alcohol || "",
-            serving_temp: this.wine.serving_temp || "",
+            // Edited in the unit Home Assistant uses (°F in a US home); see
+            // _saveFields for how an untouched value keeps its stored text.
+            serving_temp: formatServingTemp(this.wine.serving_temp, this.hass),
         };
         const windowStart = (this.wine.drink_window || "").match(/\b(?:19|20)\d{2}\b/);
         this._editDrinkFrom = windowStart ? windowStart[0] : "";
@@ -6200,6 +6241,11 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
                 updates.retail_price = null;
             else
                 updates.retail_price = parseFloat(updates.retail_price) || null;
+            // The field showed the stored °C value converted for display; if it
+            // wasn't touched, keep the stored text rather than rewriting it.
+            if (updates.serving_temp === formatServingTemp(this.wine.serving_temp, this.hass)) {
+                updates.serving_temp = this.wine.serving_temp || "";
+            }
             if (this.mode === "buylist") {
                 await this.hass.callWS({
                     type: "wine_cellar/update_buy_list_item",
@@ -6826,7 +6872,7 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
           </div>
           <div class="form-group">
             <label>${this._t("ui.wineDetail.servingTempLabel")}</label>
-            <input type="text" .value=${d.serving_temp} placeholder="${this._t('ui.wineDetail.servingTempPlaceholder')}"
+            <input type="text" .value=${d.serving_temp} placeholder="${this._t(usesFahrenheit(this.hass) ? 'ui.wineDetail.servingTempPlaceholderF' : 'ui.wineDetail.servingTempPlaceholder')}"
               @input=${(e) => this._updateEditField("serving_temp", e.target.value)} />
           </div>
         </div>
@@ -7094,7 +7140,7 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
                     ? b$1 `<span class="info-chip"><span class="info-chip-icon">%</span> ${wine.alcohol}</span>`
                     : A$1}
                         ${wine.serving_temp
-                    ? b$1 `<span class="info-chip"><span class="info-chip-icon">🌡️</span> ${wine.serving_temp}</span>`
+                    ? b$1 `<span class="info-chip"><span class="info-chip-icon">🌡️</span> ${formatServingTemp(wine.serving_temp, this.hass)}</span>`
                     : A$1}
                         ${wine.food_pairings
                     ? this._splitPairings(wine.food_pairings).map((food) => b$1 `<span class="info-chip">${food}</span>`)

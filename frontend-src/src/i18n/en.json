@@ -543,6 +543,7 @@
       "alcoholPlaceholder": "e.g. 13.5%",
       "servingTempLabel": "Serving temp.",
       "servingTempPlaceholder": "e.g. 16-18°C",
+      "servingTempPlaceholderF": "e.g. 61-64°F",
       "purchaseDateLabel": "Purchase Date",
       "drinkFromLabel": "Drink From",
       "drinkFromPlaceholder": "e.g. 2025",
