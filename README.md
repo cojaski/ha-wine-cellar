@@ -1,103 +1,101 @@
 # Cork Dork — Wine Cellar Tracker for Home Assistant
 
-A custom Home Assistant integration for managing your wine collection. Track bottles by location in interactive rack grids, scan labels and wine lists with AI, get Vivino ratings and pricing, drag-and-drop bottles between slots, browse and export your full inventory, and visualize your cellar with a feature-rich Lovelace card.
+A custom Home Assistant integration and Lovelace card for managing a wine collection. Lay out your real racks, fridge shelves, bins and boxes. Add bottles by barcode, label photo or wine-list scan. Enrich them from Vivino and an AI model, and see what's ready to drink, what to hold, and how long to let a bottle warm up before serving. You can also log what you drank and how it was.
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 
-![Wine Cellar Rack View](docs/screenshot-rack-view.png)
+![Cellar overview](docs/screenshot-rack-view.png)
 
-![Wine Detail Dialog](docs/screenshot-wine-detail.png)
+<p align="center">
+  <img src="docs/screenshot-phone.png" width="260" alt="Phone layout">
+  &nbsp;&nbsp;
+  <img src="docs/screenshot-phone-detail.png" width="260" alt="Wine detail on a phone">
+</p>
+
+## What's new
+
+- **Glass UI**: frosted, readable pop-ups that work under any theme, including "liquid glass" themes. Wine-type chips are colour-coded, every dialog has the same close button, and dialogs fit a phone screen without zoom-on-focus or sideways scrolling.
+- **Drink button & tasting log**: drink a bottle from its detail view, rate it, jot notes, and tick *Buy again* to put it on your Buy List. History shows it all, with a *Buy again only* filter.
+- **Pairings finder**: pick what you're eating (beef, seafood, cheese…) and see the bottles that go with it.
+- **Rack styles**: classic grid, front/back fridge shelves, staggered (quinconce) shelves, bulk bins and wine boxes, plus an optional secondary zone stacked above or below.
+- **Zone sensors & chambering advice**: attach temperature/humidity sensors to a rack and get "take it out 55 min before serving" advice based on your room temperature.
+- **Peak window**: a separate peak window inside each wine's drink window, with a darker badge while the wine is at its peak.
+- **Inventory review**: re-check every bottle against Vivino or the AI in one pass.
+- **Fixes**: iOS barcode scanning, Vivino no longer copying "trending wine" prices or IDs onto unrelated bottles, °F serving temperatures for US-unit installs, phone pop-ups that clear the Dynamic Island, and more.
 
 ## Features
 
 ### Visual Cellar Management
-- **Interactive Cabinet Grid** — Color-coded bottles by type (red, white, rosé, sparkling, dessert, whisky) with thumbnail images, scalable disposition badges (Drink/Hold/Past Peak), and Vivino ratings
-- **Deep Rack Support** — Racks can be 1-6 bottles deep; click any deep cell to open the depth side panel showing every bottle stacked front-to-back
-- **Depth Side Panel** — Slide-out panel reveals all bottles in a deep cell, click any wine for its detail or tap an empty slot to add a bottle at that specific depth
-- **Visual Rack Editor** — Create and edit racks with a live grid preview, stepper controls for rows/columns/depth, and per-row type selectors. Racks can be any size up to 20×20.
-- **Drag & Drop** — Rearrange bottles by dragging on desktop; long-press to move on mobile
-- **Move & Swap** — Move button in wine detail or long-press on mobile; bottles swap automatically if the target cell is occupied
-- **Copy & Paste** — Duplicate wines across your cellar for multi-bottle purchases
-- **Search & Filter** — Filter by wine type or search by name, winery, region, or grape variety
-- **Statistics Dashboard** — Total bottles, capacity, available slots, total cellar value, and gain/loss at a glance
-- **Responsive Design** — Optimized layouts for phone, tablet, and desktop with full dark mode support
+- **Interactive racks**: bottles are colour-coded by type (red, white, rosé, sparkling, dessert, optional whisky) with Drink / Hold / Past badges. The single-rack view shows full word pills, and a darker green marks a wine at its peak.
+- **Rack styles**: each rack is a *Classic grid*, *Shelf (Front/Back)* (fridge shelves with independent front and back lane counts), *Staggered Shelf* (quinconce rows that nest into the gaps of the row below, as above a fridge's compressor bump), *Bulk Bin* or *Wine Box*. You can add a **secondary zone** of any style above or below the main one.
+- **Deep racks**: grids can be 1–6 bottles deep. Tap a deep cell to open a side panel listing every bottle front to back.
+- **Visual rack editor**: live preview, stepper controls and per-rack sensors, for racks up to 20×20.
+- **Drag & drop**: drag on desktop or long-press on mobile. Bottles swap if the target is occupied. **Move**, **Copy** (for multi-bottle purchases) and **Unassign** are in the detail view.
+- **Tidy-ups**: the arrangement report spots scattered bottles of the same wine, mixed-type zones and similar clutter, and suggests a more logical layout.
+- **Stats bar**: bottle count, capacity, free slots, cellar value and gain/loss.
+- **Responsive**: separate layouts for phone, tablet and desktop, with touch-sized targets on coarse pointers.
 
-![Depth Side Panel](docs/screenshot-depth-panel.png)
+![Depth side panel](docs/screenshot-depth-panel.png)
 
-### Whisky
+![Rack editor](docs/screenshot-rack-editor.png)
 
-- **Whisky Type** — Bottles can be typed as *Whisky* alongside the five wine types, with their own colour, filter chip and inventory count. A whisky reuses the wine fields: the *Winery* field becomes *Distillery*, *Grape Variety* becomes *Cask* (maturation info), and *Vintage* is the distillation year if the bottle has one.
-- **AI, not Vivino** — Vivino has no whisky data, so Vivino lookups and batch refreshes skip whisky bottles. Label recognition and the AI analysis handle whisky labels with their own rules: always *Drink Now* (whisky does not age in the bottle), no drink window, no wine-critic scores, but a tasting description and a price estimate as usual.
+### Wine Detail
+- **Drink**: a large button that archives the bottle as drunk, with an optional personal rating, notes and *Buy again*.
+- **Look up**: a *Vivino / AI* button re-checks the wine (it goes straight to Vivino when no AI provider is configured). *Label* re-reads a label photo, and *Reset text* clears descriptions stuck in the wrong language.
+- **Drink window & peak**: Drink now / Hold / Past peak is recomputed from the drink window automatically. No AI call is needed.
+- **Chambering advice**: when a rack has a temperature sensor and you've set a room sensor, the dialog tells you how long to take the bottle out before serving, or to chill it. The estimate uses Newton's law of cooling toward the middle of the wine's serving range. Advice only appears once the bottle has sat in its rack long enough to match the sensor (24 h by default). Temperatures show in °F when Home Assistant uses US units.
+- **Critic scores**: AI estimates from Wine Spectator, Robert Parker, Jeb Dunnuck and Antonio Galloni, next to the Vivino community rating and your own half-star rating.
+- **Duplicates stay in sync**: refreshing or analysing one bottle updates every other bottle with the same name, winery and vintage. Location, price, purchase date and notes stay per-bottle.
 
-### Storage Zone Types
-- **Bulk Bins** — Open storage for loosely grouped bottles (e.g., daily drinkers, pending sort). Shows individual wine squares with configurable capacity.
-- **Wine Boxes** — Multi-box rows with configurable box sizes (e.g., [6, 12, 3]). CSS-drawn box shapes with wine count displayed inside each box (e.g., "2/6") and pack size labels.
-- **Zone Side Panel** — Click any storage zone container to open a slide-out panel (same UX as the depth panel) showing all wines in that zone with add/remove capability.
-- **Per-Row Type Selector** — Each rack row can be independently set to Slots (grid), Bulk Bin, or Wine Box via the rack settings dialog.
+![Wine detail](docs/screenshot-wine-detail.png)
 
-### Inventory Browser & Wine History
-- **Full Inventory Dialog** — Browse, search, sort, and export your entire cellar collection from the 📦 Inventory button
-- **Wine History** — Track removed bottles with reason (Drank, Gifted, Sold, Broken, Spoiled, Other). Switch between Inventory and History tabs to see your consumption log sorted by date.
-- **Multi-Field Search** — Search across name, winery, region, country, grape variety, vintage, barcode, notes, and description
-- **Sort Options** — Sort by name, winery, vintage, type, rating, your own rating, price, drink-by date, urgency, purchase date, date added, or cabinet location (ascending/descending)
-- **Type Filter Chips** — Quick-filter by type (All / Red / White / Rosé / Sparkling / Dessert / Whisky)
-- **Detailed Filters** — Narrow by country, grape, cabinet, food pairing, minimum rating, maximum price, and vintage range
-- **Presets** — One-tap views for the questions actually worth asking: Drink this year, Past peak, Not rated, Missing data, Added recently
-- **Summary Stats** — Total bottles, estimated collection value, and type breakdown with colored indicators
-- **Disposition Search** — Search by "Drink", "Hold", or "Past Peak" to filter by disposition; also searches drink window field
-- **CSV Export** — Download your filtered/sorted inventory as a date-stamped CSV file with 26 data columns
-- **Server Backup** — Save timestamped backups to the HA server (config/wine_cellar_backups/) with one click
-- **Server Restore** — Browse and restore from any previous server backup with a date/size picker
-- **Download/Upload** — Download the full cellar as JSON or upload a JSON backup to restore
-- **CSV Import** — Import wines from a CSV file
-- **Click to Detail** — Tap any wine in the inventory to open the full detail dialog with edit, move, and action capabilities
+### Inventory, History & Pairings
+- **Inventory**: search across name, winery, region, country, grape, vintage, barcode, notes and description. Sort by any field, filter by type chip, country, grape, cabinet, food pairing, rating, price and vintage range.
+- **Presets**: one tap for *Drink this year*, *Past peak*, *Not rated*, *Missing data* or *Added recently*.
+- **Inventory review**: re-check the whole cellar against Vivino's catalogue or the AI. Banners count the bottles missing pairings or a drink window, with one-tap *Fill from Vivino* / *Analyze with AI* buttons.
+- **Pairings**: pick a food category (icons and bottle counts) and the inventory filters to wines that pair with it.
+- **History & tasting log**: removed bottles are kept with their reason (Drank, Gifted, Sold, Broken, Spoiled, Other), your rating, notes and a *Buy again* flag. Entries can be restored or annotated later.
+- **Backup & export**: CSV export and import, JSON download and upload, and timestamped server backups (`config/wine_cellar_backups/`) with a restore picker. Bottle photos are stored on disk (`config/wine_cellar_photos/`) and travel inside backups.
 
-### Unassigned Wines
-- **Unassigned Tab** — When wines exist that are not assigned to any rack (e.g., after rack deletion), an orange "Unassigned" tab appears automatically
-- **Always Visible** — Unassigned wines also appear at the bottom of the "All Sections" view so they are never hidden
-- **Easy Reassignment** — Tap any unassigned wine to open its detail, then use Move to place it in a rack
+![Inventory](docs/screenshot-inventory.png)
+
+<p align="center">
+  <img src="docs/screenshot-pairings.png" width="49%" alt="Pairings finder">
+  <img src="docs/screenshot-history.png" width="49%" alt="History and tasting log">
+</p>
+
+### Adding Wines
+- **Scan barcode**: uses the camera, with Vivino, Open Food Facts and UPC Item DB lookups. It works on iOS too, through a bundled zxing WASM fallback that's served locally, so no CDN is needed.
+- **Recognize label**: one photo gives the AI everything it needs for a full sommelier read (name, winery, vintage, type, region, grape, drink window, description, price estimate, critic scores). A Vivino lookup runs in the background to add a rating and photo.
+- **Scan wine list**: photograph a restaurant list or a receipt. Every wine is extracted with critic scores, retail price and markup, best-value picks are highlighted, and an *In cellar* badge marks wines you already own. Add any of them to the cellar or the Buy List.
+- **Search by name** or **enter manually**. New bottles are auto-enriched from Vivino in the background.
+
+![Add wine](docs/screenshot-add-wine.png)
 
 ### Buy List
-- **Wine Wishlist** — Save wines you want to purchase with full detail tracking (ratings, pricing, tasting notes)
-- **Quick Add** — Add wines to the buy list from the wine list scanner or the Add Wine dialog
-- **Move to Cellar** — One-tap to move a buy list wine into a specific rack position
-- **Full Detail View** — Tap any buy list item to see its complete detail with Vivino refresh, AI scan, and tasting notes
+- A wishlist with full detail (ratings, prices, notes). Add to it from a wine-list scan, the Add Wine dialog or a *Buy again* tick, and move an item into a rack with one tap.
 
 ![Buy List](docs/screenshot-buy-list.png)
 
-### AI-Powered Wine Intelligence
-- **One-Scan Label Recognition** — Snap a photo of a wine label and Google Gemini identifies the wine and provides a full sommelier assessment in one call: name, winery, vintage, type, region, grape variety, disposition, drink window, tasting description, estimated price, and critic rating estimates (Wine Spectator, Robert Parker, James Dunnuck, Antonio Galloni)
-- **AI Batch Scan** — One-click full AI analysis on your entire cellar: disposition, drink windows, descriptions, pricing, and ratings for every bottle
-- **Wine List / Receipt Scanner** — Photograph a restaurant wine list or store receipt and get every wine extracted with AI-powered analysis in a single call: critic scores, disposition, drink window, description, retail price estimates, and markup percentages. Highlights best-value picks and lets you add any wine to your cellar or buy list with one tap. Shows "IN CELLAR" badge and your personal score when a scanned wine matches one already in your collection. Optionally enrich with Vivino ratings and images. Supports long lists (up to 3 minute timeout).
-- **Gemini Price Fallback** — When Vivino has no pricing data, Gemini AI provides estimated retail prices as a fallback for single wine refresh and batch scans
-- **Auto-Enrich on Add** — When you add a wine, Vivino data (rating, price, description, food pairings) is automatically fetched in the background
+### AI
+- **Providers**: Google Gemini directly, or any **OpenAI-compatible** endpoint (base URL + key + model).
+- **What it adds**: tasting descriptions, drink and peak windows, disposition, food pairings, critic score estimates, and a price estimate when Vivino has none.
+- **Language & currency**: AI and Vivino text in English, French or German, with prices in USD, EUR, GBP or CHF. Descriptions are regenerated automatically when you change language.
 
-### Vivino Integration
-- **Cellar Connection** — Connect your Vivino cellar by pasting your cellar URL and session cookie once (see **[docs/vivino-import.md](docs/vivino-import.md)**). One tap on the card's button then brings in every bottle you own (with ratings, images, region, grape data, and your personal star ratings/notes) as unassigned wines. Bottle counts are respected and already-imported bottles are never duplicated.
-- **Vivino Mode: Import or Synchronize** — Chosen in the integration's options. **Import** (the default) is a one-way mirror: Vivino is the source of truth and Cork Dork follows it; nothing is ever written to your Vivino account. **Synchronize** is a two-way reconcile: bottles you add or drink in Cork Dork are pushed back to your Vivino cellar as cellar events (visible and undoable in Vivino's history), guarded so a bad fetch can't wipe Cork Dork and corrupt local data can't wipe Vivino. The card's button reflects the mode — ⬇️ Vivino Import or 🔄 Vivino Sync.
-- **You Pick the Bottle** — When Vivino loses a bottle and the choice of which physical bottle to remove is obvious (the wine is gone entirely, or unplaced bottles cover it), Cork Dork handles it and the sync toast reports the count. When a placed bottle would have to go and there are several to choose from, nothing is deleted: the card shows a panel, selecting the wine rings every candidate bottle in your racks in orange, and you click the bottle that is actually gone and confirm. Removed bottles are archived to history either way.
-- **Conflicts Are Yours to Settle** — If both sides changed the same wine between syncs (say a bottle drunk on Vivino while one was added in Cork Dork), the sync changes nothing and the card shows the conflict. Selecting it rings all of your local bottles for review; after correcting anything that's off, one confirmed click declares Cork Dork's count the truth and updates Vivino to match.
-- **Auto Sync** — Optionally sync the cellar automatically twice a day. When the session cookie expires, a notification prompts you to paste a fresh one.
-- **Sync Service & Sensor** — `wine_cellar.sync_vivino` service for automations plus a `Cork Dork Vivino Cellar` sensor reporting the last sync
-- **Vivino Batch Scan** — Refresh all wines from Vivino in one click: ratings, review counts, market pricing, descriptions, food pairings, alcohol content, and grape variety. Falls back to Gemini AI pricing when Vivino has no price.
-- **Individual Vivino Refresh** — Update any single wine's Vivino data from the detail dialog
-- **Wine Search** — Search Vivino by name to find and add wines without a barcode
-- **Wine List Vivino Enrichment** — After scanning a wine list, optionally click "Get Vivino Scores" to add Vivino ratings and images to your results
+### Vivino
+- **Cellar connection**: paste your cellar URL and session cookie once (see **[docs/vivino-import.md](docs/vivino-import.md)**). After that, one tap imports every bottle you own as unassigned wines, without duplicates.
+- **Import or Synchronize**: *Import* (the default) is a one-way mirror that never writes to Vivino. *Synchronize* is a two-way reconcile: bottles added or drunk in Cork Dork are pushed back as Vivino cellar events. It is guarded so that a bad fetch can't wipe either side.
+- **You pick the bottle**: when Vivino loses a bottle and it's ambiguous which physical one is gone, candidates are ringed in orange in your racks and you confirm the right one. Conflicting edits on both sides are shown for you to settle, not guessed.
+- **Auto sync** twice a day, with a notification when the cookie expires.
+- **Batch and single refresh**: ratings, descriptions, food pairings, alcohol and grape. Once a wine has a Vivino ID it is refreshed from Vivino's by-ID API, and any ID that turns out to name a different wine is dropped.
 
-### Scanning & Input
-- **Camera Barcode Scanning** — Point your phone or tablet camera at a barcode to auto-lookup details from Vivino and Open Food Facts
-- **AI Label Scanning** — Photo-based label recognition with full wine analysis
-- **Manual Entry** — Add wines by hand with a comprehensive form
+### Whisky (opt-in)
+- Turn on *Track whisky bottles* in Settings to get a Whisky type. *Winery* becomes *Distillery*, *Grape Variety* becomes *Cask*, and *Vintage* is the distillation year. Vivino is skipped for whisky. The AI handles it with its own rules: always Drink Now, no critic scores.
 
-### Ratings & Notes
-- **Interactive Half-Star Rating** — Rate wines from 0.5 to 5.0 stars
-- **Structured Tasting Notes** — Record aroma, taste, finish, and overall impression
-- **AI Critic Estimates** — Gemini provides estimated scores from Wine Spectator, Robert Parker, James Dunnuck, and Antonio Galloni
-- **Vivino Community Ratings** — Real ratings and review counts from Vivino's user base
+### Languages
+- The card follows Home Assistant's display language (**English** and **French** today), and so do the integration's setup and options screens. Sensor units are localised too.
 
-### Home Assistant Integration
-- **HA Sensors** — Entities for total bottles, capacity percentage, and per-cabinet counts for use in automations and dashboards
-- **Services** — Automate adding, removing, and moving wines via HA services
+![Settings](docs/screenshot-settings.png)
 
 ## Installation
 
@@ -105,9 +103,9 @@ A custom Home Assistant integration for managing your wine collection. Track bot
 
 1. Open HACS in your Home Assistant instance
 2. Click the three dots in the top right and select **Custom repositories**
-3. Add `https://github.com/BaconWappedBitcoin/ha-wine-cellar` with category **Integration**
+3. Add `https://github.com/cojaski/ha-wine-cellar` with category **Integration**
 4. Search for **Cork Dork** and click **Install**
-5. Restart Home Assistant
+5. Restart Home Assistant, then hard-refresh your browser (Cmd/Ctrl+Shift+R)
 
 ### Manual
 
@@ -118,7 +116,7 @@ A custom Home Assistant integration for managing your wine collection. Track bot
 
 1. Go to **Settings > Devices & Services > Add Integration**
 2. Search for **Cork Dork** and follow the setup flow
-3. Add the Lovelace card to your dashboard:
+3. Add the card to a dashboard (it's registered as a Lovelace resource automatically on storage-mode dashboards):
 
 ```yaml
 type: custom:wine-cellar-card
@@ -127,47 +125,38 @@ title: Cork Dork
 
 ### AI Features (Optional)
 
-To enable label recognition, AI analysis, wine list scanning, and batch AI scanning:
-
-1. Get a free API key from [Google AI Studio](https://aistudio.google.com/apikey)
+1. Get a free Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey), or use any OpenAI-compatible provider
 2. Go to **Settings > Devices & Services > Cork Dork > Configure**
-3. Enter your Gemini API key
-4. Features unlocked:
-   - **Recognize Label** button in the Add Wine dialog (camera to full analysis in one scan)
-   - **AI** button on individual wines (full analysis with disposition, ratings, pricing)
-   - **AI Batch Scan** button in the card header (analyze all wines at once)
-   - **Scan List** button to photograph wine lists and receipts for instant analysis
-   - **Gemini price fallback** when Vivino has no pricing data
+3. Pick the provider and enter the key (plus the base URL and model for OpenAI-compatible providers)
+
+This unlocks label recognition, wine-list scanning, AI look-ups on single wines, AI in the Inventory review, and AI price estimates.
+
+### Chambering (Optional)
+
+1. In **Manage Racks**, edit a rack and pick its temperature (and optionally humidity) sensor
+2. In **Cork Dork > Configure**, choose a **room temperature sensor**. You can also tune the warm-up time constant (default 75 min, a rough starting point) and the equilibration time (default 24 h)
+
+Wines need a serving temperature (e.g. `16-18°C`), which Vivino or the AI usually supplies.
 
 ### Connecting Your Vivino Cellar
 
-Vivino has no public read API for your own cellar — the site uses a Rails
-session cookie and serves the cellar from an Inertia.js endpoint on
-`www.vivino.com` (not the `api.vivino.com` mobile backend). Cork Dork reads it
-by replaying a session cookie you paste from your browser.
+Vivino has no public API for your own cellar. Cork Dork reads it from `www.vivino.com` by replaying a session cookie you paste from your browser. **[docs/vivino-import.md](docs/vivino-import.md)** covers both methods:
 
-- **[docs/vivino-import.md](docs/vivino-import.md)** has full instructions for
-  both methods:
-  - **Integration sync (recommended):** paste your cellar URL and session cookie
-    in **Cork Dork → Configure**, then use **🔄 Vivino Sync** (or enable twice-daily
-    auto-sync). When the cookie expires, a notification prompts you to refresh it.
-  - **One-time CSV export:** run a browser-console snippet and load the file via
-    **📦 Inventory → Import CSV**.
-- After importing, **🍇 Vivino Batch Scan** enriches wines with ratings, pricing,
-  descriptions, and images from Vivino's public data.
+- **Integration sync (recommended)**: paste your cellar URL and session cookie in **Cork Dork → Configure**, then use **⬇️ Vivino Import** / **🔄 Vivino Sync**, or enable auto-sync.
+- **One-time CSV export**: run a browser-console snippet and load the file via **📦 Inventory → Import CSV**.
 
 ## Default Cabinet Layout
 
-The integration ships with 3 cabinet sections, each with 10 rows and 9 columns (90 slots per section, 270 total). The bottom row of each section defaults to a bulk bin storage zone. Rack dimensions (up to 20×20), names, depth (1-6 bottles deep), and per-row storage types (Slots, Bulk Bin, Wine Box) can all be customized through the **Manage Racks** button in the tab bar.
+Three cabinet sections ship by default, each 10 rows × 9 columns, with a bulk bin as the bottom row. Everything can be changed in **Manage Racks**: names, size (up to 20×20), depth (1–6), rack style, secondary zone and sensors.
 
 ## Data Sources
 
 | Source | Data Provided |
 |---|---|
-| **Vivino** | Wine name, winery, region, country, type, vintage, rating, ratings count, image, grape variety, description, food pairings, alcohol %, market price |
-| **Open Food Facts** | Wine name, brand, origin, country, image |
-| **UPC Item DB** | Wine name, brand (barcode lookup) |
-| **Google Gemini** | Label recognition, wine list extraction, full wine analysis (disposition, drink window, description, estimated retail price, critic rating estimates), price fallback |
+| **Vivino** | Name, winery, region, country, type, vintage, community rating & count, image, grape, description, food pairings, alcohol %, your cellar (with a session cookie). Prices are rarely available. |
+| **Open Food Facts** | Name, brand, origin, country, image (barcode lookup) |
+| **UPC Item DB** | Name, brand (barcode lookup) |
+| **AI (Gemini or OpenAI-compatible)** | Label recognition, wine-list extraction, description, drink & peak windows, disposition, food pairings, critic score estimates, price estimate |
 
 ## Services
 
@@ -177,16 +166,20 @@ The integration ships with 3 cabinet sections, each with 10 rows and 9 columns (
 | `wine_cellar.remove_wine` | Remove a wine bottle (optional reason: drank, gifted, sold, broken, spoiled, other) |
 | `wine_cellar.move_wine` | Move a wine to a different cabinet/position |
 | `wine_cellar.scan_barcode` | Look up a barcode and fire a result event |
-| `wine_cellar.sync_vivino` | Import your Vivino cellar and wishlist (target: all, cellar, or wishlist) |
+| `wine_cellar.sync_vivino` | Import/sync your Vivino cellar and wishlist (target: all, cellar, or wishlist) |
 
 ## Sensors
 
 | Entity | Description |
 |---|---|
-| `sensor.wine_cellar_total_bottles` | Total number of bottles in your cellar |
-| `sensor.wine_cellar_capacity` | Percentage of cellar capacity used |
-| `sensor.wine_cellar_cabinet_*_count` | Bottle count per cabinet section |
-| `sensor.cork_dork_vivino_cellar` | Bottles in your Vivino cellar at last sync (with sync details as attributes) |
+| `sensor.cork_dork_total_bottles` | Total bottles in your cellar |
+| `sensor.cork_dork_capacity` | Percentage of cellar capacity used |
+| `sensor.cork_dork_<rack name>` | Bottle count per rack |
+| `sensor.cork_dork_vivino_cellar` | Bottles in your Vivino cellar at last sync (sync details as attributes) |
+
+## Credits
+
+Originally created by [BaconWappedBitcoin](https://github.com/BaconWappedBitcoin/ha-wine-cellar), with features contributed across several community forks.
 
 ## License
 
