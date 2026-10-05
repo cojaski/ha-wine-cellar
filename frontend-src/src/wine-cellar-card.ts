@@ -503,9 +503,29 @@ export class WineCellarCard extends LitElement {
       @media (max-width: 599px) {
         .header-row {
           padding: 12px 12px 6px;
+          flex-wrap: wrap;
+          gap: 8px;
         }
         .title {
           font-size: 1.1em;
+        }
+        /* The header buttons get their own row under the title, sharing it
+           equally, instead of wrapping into a stack beside it. The
+           !important beats the buttons' inline padding/font-size. */
+        .header-actions {
+          flex: 1 1 100%;
+          flex-wrap: nowrap;
+        }
+        .header-actions .btn {
+          flex: 1 1 0;
+          min-width: 0;
+          padding: 6px 4px !important;
+          font-size: 0.8em !important;
+          justify-content: center;
+          text-align: center;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .stats-bar {
           flex-wrap: wrap;
