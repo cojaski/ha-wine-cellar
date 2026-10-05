@@ -1668,11 +1668,8 @@ async def ws_batch_refresh_vivino(
                 if not query:
                     continue
 
-                # fetch_extras=False: skip the extra description/food_pairings
-                # HTML request here — it would ~double request volume across a
-                # whole cellar's worth of wines. Individual refresh still does it.
                 result = await vivino.search_wine(
-                    query, language, currency, wine.get("vintage"), fetch_extras=False, wine_type=wine.get("type"),
+                    query, language, currency, wine.get("vintage"), wine_type=wine.get("type"),
                 )
                 lookup = result[0] if result else None
                 if lookup and not _vivino_match_is_trustworthy(wine, lookup):
