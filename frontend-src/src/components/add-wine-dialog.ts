@@ -11,7 +11,7 @@ import {
   producerLabel,
   varietyLabel,
 } from "../models";
-import { sharedStyles, touchStyles } from "../styles";
+import { sharedStyles, touchStyles, dialogClose } from "../styles";
 import { t } from "../i18n";
 import { resizeImageForStorage } from "../utils/image";
 import {
@@ -169,7 +169,7 @@ export class AddWineDialog extends LitElement {
         font-size: 1em;
         text-align: center;
         letter-spacing: 2px;
-        background: var(--wc-bg);
+        background: var(--wc-field-bg);
         color: var(--wc-text);
         box-sizing: border-box;
       }
@@ -203,7 +203,7 @@ export class AddWineDialog extends LitElement {
         border-radius: 10px;
         font-size: 1em;
         box-sizing: border-box;
-        background: var(--wc-bg);
+        background: var(--wc-field-bg);
         color: var(--wc-text);
       }
 
@@ -267,7 +267,7 @@ export class AddWineDialog extends LitElement {
         color: inherit;
         border: 1px solid var(--wc-border);
         border-radius: 8px;
-        background: var(--wc-card-bg, transparent);
+        background: var(--wc-field-bg);
         padding: 8px 10px;
         cursor: pointer;
         transition: all 0.15s;
@@ -415,7 +415,7 @@ export class AddWineDialog extends LitElement {
         height: 32px;
         border: 1px solid var(--wc-border);
         border-radius: 8px;
-        background: var(--wc-bg);
+        background: var(--wc-field-bg);
         color: var(--wc-text);
         font-size: 1.1em;
         line-height: 1;
@@ -438,7 +438,7 @@ export class AddWineDialog extends LitElement {
         text-align: center;
         border: 1px solid var(--wc-border);
         border-radius: 8px;
-        background: var(--wc-bg);
+        background: var(--wc-field-bg);
         color: var(--wc-text);
         font-size: 1em;
         font-weight: 600;
@@ -1744,6 +1744,7 @@ export class AddWineDialog extends LitElement {
     return html`
       <div class="dialog-overlay" @click=${this._close}>
         <div class="dialog" @click=${(e: Event) => e.stopPropagation()}>
+          ${dialogClose(this._close, this._t('ui.common.close'))}
           <div class="dialog-header">${this.buyListMode ? this._t("ui.addWine.titleBuyList") : this._t("ui.addWine.title")}</div>
           ${this._renderStepIndicator()}
           ${this._step === "scan" ? this._renderScanStep() : nothing}

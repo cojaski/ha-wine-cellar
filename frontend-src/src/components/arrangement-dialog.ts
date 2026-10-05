@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Cabinet, Wine } from "../models";
-import { sharedStyles, touchStyles } from "../styles";
+import { sharedStyles, touchStyles, dialogClose } from "../styles";
 import { Finding, FindingKind, Move, analyzeArrangement } from "../utils/arrange";
 import { placementIn } from "../utils/location";
 import { t } from "../i18n";
@@ -240,6 +240,7 @@ export class ArrangementDialog extends LitElement {
     return html`
       <div class="dialog-overlay" @click=${() => this.dispatchEvent(new CustomEvent("close"))}>
         <div class="dialog" style="max-width:620px" @click=${(e: Event) => e.stopPropagation()}>
+          ${dialogClose(() => this.dispatchEvent(new CustomEvent("close")), this._t("ui.common.close"))}
           <div class="dialog-header">${this._t("ui.arrangement.header")}</div>
 
           <div class="dialog-body">

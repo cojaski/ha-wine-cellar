@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Wine, WineListItem, WineType, WINE_TYPE_COLORS, WINE_TYPE_LABELS } from "../models";
-import { sharedStyles, touchStyles } from "../styles";
+import { sharedStyles, touchStyles, dialogClose } from "../styles";
 import { t } from "../i18n";
 import "./label-camera";
 import "./wine-detail-dialog";
@@ -36,7 +36,8 @@ export class WineListDialog extends LitElement {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 16px 20px 8px;
+        min-height: 36px;
+        padding: 12px 60px 8px 20px;
       }
 
       .header-title {
@@ -51,20 +52,7 @@ export class WineListDialog extends LitElement {
         padding: 0 20px 12px;
       }
 
-      .close-btn {
-        background: none;
-        border: none;
-        font-size: 1.3em;
-        cursor: pointer;
-        color: var(--wc-text-secondary);
-        padding: 4px 8px;
-        border-radius: 6px;
-        line-height: 1;
-      }
 
-      .close-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
-      }
 
       .extracting {
         display: flex;
@@ -745,6 +733,7 @@ export class WineListDialog extends LitElement {
     return html`
       <div class="dialog-overlay" @click=${this._close}>
         <div class="dialog" style="max-width:600px" @click=${(e: Event) => e.stopPropagation()}>
+          ${dialogClose(this._close, this._t('ui.common.close'))}
           <div class="header">
             <span class="header-title">
               ${this._phase === "capture"
@@ -753,7 +742,6 @@ export class WineListDialog extends LitElement {
                   ? `\uD83C\uDF7D\uFE0F ${this._restaurantName}`
                   : this._t("ui.wineList.scannedListTitle")}
             </span>
-            <button class="close-btn" @click=${this._close}>\u2715</button>
           </div>
 
           ${this._phase === "capture"

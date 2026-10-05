@@ -1,6 +1,6 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { sharedStyles, touchStyles } from "./styles";
+import { sharedStyles, touchStyles, closeIcon } from "./styles";
 import { Wine, Cabinet, CellarStats, WINE_TYPE_COLORS, WineType, StorageRow, StorageRowType, BOX_SIZES, getRackSlots, getWineLocation, getShelfSlotGroups, ShelfSlotGroup, getSteppedSlotGroups, SteppedSlotGroup } from "./models";
 import { t } from "./i18n";
 import { matchesQuery } from "./utils/search";
@@ -161,8 +161,26 @@ export class WineCellarCard extends LitElement {
   static styles = [
     sharedStyles,
     css`
+      /* Glass palette, declared here only (not in sharedStyles) so every
+         dialog inherits it from the card instead of resetting it.
+         glass-dark is set by _syncGlassMode() from the theme's text colour. */
       :host {
         display: block;
+        --wc-glass-surface: rgba(250, 248, 247, 0.84);
+        --wc-glass-solid: #faf8f7;
+        --wc-glass-field: rgba(255, 255, 255, 0.6);
+        --wc-glass-line: rgba(0, 0, 0, 0.1);
+        --wc-glass-edge: rgba(255, 255, 255, 0.7);
+        --wc-glass-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+      }
+
+      :host([glass-dark]) {
+        --wc-glass-surface: rgba(32, 28, 32, 0.82);
+        --wc-glass-solid: #201c20;
+        --wc-glass-field: rgba(0, 0, 0, 0.28);
+        --wc-glass-line: rgba(255, 255, 255, 0.12);
+        --wc-glass-edge: rgba(255, 255, 255, 0.14);
+        --wc-glass-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.08);
       }
 
       ha-card {
@@ -381,10 +399,14 @@ export class WineCellarCard extends LitElement {
         bottom: 20px;
         left: 50%;
         transform: translateX(-50%);
-        background: #333;
+        background: rgba(30, 26, 30, 0.82);
+        -webkit-backdrop-filter: var(--wc-blur);
+        backdrop-filter: var(--wc-blur);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         color: #fff;
         padding: 10px 20px;
-        border-radius: 8px;
+        border-radius: 999px;
         font-size: 0.9em;
         z-index: 1000;
         animation: fadeIn 0.2s;
@@ -607,6 +629,37 @@ export class WineCellarCard extends LitElement {
     window.addEventListener("unhandledrejection", this._onUnhandledRejection);
     this._loadData();
     this._subscribeToUpdates();
+  }
+
+  // The glass surfaces (see --wc-glass-* in styles) need to know whether the
+  // theme is light or dark. The theme's own text colour is the honest answer:
+  // hass.themes.darkMode is false for a dark-only custom theme, and a light
+  // pane under light text is exactly the unreadable pop-up this replaces.
+  // Rechecked only when the theme object changes, not on every state update.
+  private _themesSeen: unknown = {};
+
+  protected updated(changed: Map<string, unknown>) {
+    super.updated?.(changed);
+    if (changed.has("hass") && this.hass?.themes !== this._themesSeen) {
+      this._themesSeen = this.hass?.themes;
+      requestAnimationFrame(() => this._syncGlassMode());
+    }
+  }
+
+  private _syncGlassMode() {
+    let dark = !!this.hass?.themes?.darkMode;
+    const text = getComputedStyle(this).getPropertyValue("--primary-text-color").trim();
+    const ctx = text ? document.createElement("canvas").getContext("2d") : null;
+    if (ctx) {
+      ctx.fillStyle = "#010203";
+      ctx.fillStyle = text;
+      const m = String(ctx.fillStyle).match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+      if (m && ctx.fillStyle !== "#010203") {
+        const [r, g, b] = m.slice(1).map((h) => parseInt(h, 16));
+        dark = 0.299 * r + 0.587 * g + 0.114 * b > 140;
+      }
+    }
+    this.toggleAttribute("glass-dark", dark);
   }
 
   disconnectedCallback() {
@@ -3085,6 +3138,13 @@ export class WineCellarCard extends LitElement {
             `
           : nothing}
 
+      </ha-card>
+
+      <!-- Everything below floats over the page, so it lives outside
+           the ha-card: a glass theme gives the card a backdrop-filter, which
+           turns it into the containing block for position: fixed children —
+           with its overflow: hidden, pop-ups were trapped and clipped inside
+           the card instead of covering the screen. -->
         <!-- Batch Vivino Photo Mode Confirm -->
         ${this._removalConfirmWine ? html`
           <div class="dialog-overlay" @click=${() => (this._removalConfirmWine = null)}>
@@ -3349,7 +3409,7 @@ export class WineCellarCard extends LitElement {
                       ${this._t("ui.card.depthPanelDeepCount", { n: this._depthPanelWines.length, max: this._depthPanelMaxDepth })}
                     </span>
                   </span>
-                  <button class="depth-panel-close" @click=${this._closeDepthPanel}>✕</button>
+                  <button class="depth-panel-close" title="${this._t("ui.common.close")}" aria-label="${this._t("ui.common.close")}" @click=${this._closeDepthPanel}>${closeIcon}</button>
                 </div>
                 <div class="depth-panel-slots">
                   ${Array.from({ length: this._depthPanelMaxDepth }, (_, i) => {
@@ -3423,7 +3483,7 @@ export class WineCellarCard extends LitElement {
                           ${this._zoneSorting ? "Sorting…" : "↕ Sort by date"}
                         </button>`
                       : nothing}
-                    <button class="depth-panel-close" @click=${this._closeZonePanel}>✕</button>
+                    <button class="depth-panel-close" title="${this._t("ui.common.close")}" aria-label="${this._t("ui.common.close")}" @click=${this._closeZonePanel}>${closeIcon}</button>
                   </span>
                 </div>
                 ${this._confirmZoneSort
@@ -3742,7 +3802,7 @@ export class WineCellarCard extends LitElement {
                       ${this._t("ui.card.rackPanelBottlesCount", { n: this._rackPanelWines.length, max: this._getRackSlots().length })}
                     </span>
                   </span>
-                  <button class="depth-panel-close" @click=${this._closeRackPanel}>✕</button>
+                  <button class="depth-panel-close" title="${this._t("ui.common.close")}" aria-label="${this._t("ui.common.close")}" @click=${this._closeRackPanel}>${closeIcon}</button>
                 </div>
                 <div class="depth-panel-slots">
                   ${this._getRackSlots().map(({ row, col }, slotIdx) => {
@@ -3826,7 +3886,7 @@ export class WineCellarCard extends LitElement {
                       })}
                     </span>
                   </span>
-                  <button class="depth-panel-close" @click=${this._closeShelfPanel}>✕</button>
+                  <button class="depth-panel-close" title="${this._t("ui.common.close")}" aria-label="${this._t("ui.common.close")}" @click=${this._closeShelfPanel}>${closeIcon}</button>
                 </div>
                 <div class="depth-panel-slots">
                   ${this._getShelfPanelRows().map((sr) => {
@@ -3904,7 +3964,6 @@ export class WineCellarCard extends LitElement {
 
         <!-- Toast -->
         ${this._toast ? html`<div class="toast">${this._toast}</div>` : nothing}
-      </ha-card>
     `;
   }
 
