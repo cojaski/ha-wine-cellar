@@ -324,15 +324,21 @@ const sharedStyles = i$4 `
 
   /* Phone: full-screen dialogs, compact forms */
   @media (max-width: 599px) {
+    /* The sheet stops below the iPhone's Dynamic Island / notch / status
+       bar: Home Assistant draws edge to edge (viewport-fit=cover), so a
+       sheet allowed the full 100vh slid under it. The overlay keeps that
+       strip clear and the sheet fills at most what's left. */
     .dialog {
       width: 100%;
       max-width: 100%;
-      max-height: 100vh;
+      max-height: 100%;
       border-radius: 12px 12px 0 0;
       margin-top: auto;
     }
     .dialog-overlay {
       align-items: flex-end;
+      box-sizing: border-box;
+      padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
     }
     .dialog-header {
       padding: 16px 16px 10px;
@@ -359,6 +365,8 @@ const sharedStyles = i$4 `
     .depth-panel {
       width: 100% !important;
       border-radius: 0 !important;
+      /* Full-screen here, so it too must clear the Dynamic Island. */
+      padding-top: env(safe-area-inset-top, 0px);
     }
   }
 
