@@ -739,6 +739,83 @@ const sharedStyles = i$4 `
     color: var(--wc-primary-text);
   }
 `;
+/* Finger-sized controls on touch screens. Each component appends this LAST
+   in its static styles so it outranks the component's own compact sizing
+   (equal-specificity rules resolve by order). Gated on pointer: coarse rather
+   than width: a tablet in landscape is as wide as a laptop but still has no
+   mouse, while a narrow desktop window still has one. 44px is Apple's minimum
+   tap target, and min-height wins over any fixed height a component sets. */
+const touchStyles = i$4 `
+  @media (pointer: coarse) {
+    button,
+    select,
+    .tab,
+    .btn,
+    .file-input-label {
+      min-height: 44px;
+    }
+
+    /* Icon-only buttons by name, not every button: an explicit min-width on a
+       flex item replaces its default min-width: auto, letting labelled
+       buttons (the tabs) shrink below their text and overlap. */
+    .btn-icon,
+    .icon-btn,
+    .close-btn,
+    .inv-close,
+    .inv-sort-dir,
+    .small-btn,
+    .photo-action-btn,
+    .bl-remove-btn,
+    .depth-panel-close,
+    .search-clear,
+    .edit-toggle {
+      min-width: 44px;
+    }
+
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+    select,
+    textarea {
+      min-height: 44px;
+      /* Under 16px, Safari zooms the whole page when the field takes focus. */
+      font-size: 16px;
+    }
+
+    input[type="checkbox"],
+    input[type="radio"] {
+      width: 22px;
+      height: 22px;
+    }
+
+    /* Leave room between neighbours so a fat finger doesn't hit two. */
+    .tab-bar,
+    .dialog-footer {
+      gap: 8px;
+    }
+
+    .depth-panel-slots {
+      gap: 12px;
+    }
+
+    .depth-slot-delete {
+      width: 32px;
+      height: 32px;
+      top: 4px;
+      right: 4px;
+      font-size: 1em;
+    }
+
+    .depth-slot-wine,
+    .depth-slot-empty,
+    .depth-panel-grow {
+      min-height: 52px;
+      box-sizing: border-box;
+    }
+
+    .depth-panel {
+      width: 360px;
+    }
+  }
+`;
 
 var wineType$1 = {
 	red: "Red",
@@ -774,6 +851,27 @@ var wineLocation$1 = {
 	storage: "Storage",
 	slot: "Slot"
 };
+var foodCategory$1 = {
+	aperitif: "Aperitif & tapas",
+	charcuterie: "Charcuterie & cured meats",
+	cheese: "Cheese",
+	seafood: "Seafood",
+	fish: "Fish",
+	duck: "Duck & foie gras",
+	poultry: "Poultry",
+	lamb: "Lamb",
+	game: "Game",
+	beef: "Beef & red meat",
+	pork: "Pork & veal",
+	stew: "Stews & dishes in sauce",
+	grill: "Grilled & barbecue",
+	spicy: "Spicy & world cuisine",
+	mediterranean: "Mediterranean cuisine",
+	salad: "Salads",
+	vegetarian: "Vegetarian dishes",
+	dessert: "Desserts",
+	other: "Other pairings"
+};
 var ui$1 = {
 	common: {
 		cancel: "Cancel",
@@ -786,13 +884,15 @@ var ui$1 = {
 		replace: "replace",
 		"new": "new",
 		colonSep: ": ",
-		clearSearch: "Clear search"
+		clearSearch: "Clear search",
+		save: "Save"
 	},
 	disposition: {
 		drink: "Drink",
 		drinkNow: "Drink Now",
 		hold: "Hold",
-		pastPeak: "Past Peak"
+		pastPeak: "Past Peak",
+		past: "Past"
 	},
 	arrangement: {
 		header: "🧹 Arrangement",
@@ -851,8 +951,9 @@ var ui$1 = {
 		vivinoScanning: "Vivino Scanning...",
 		vivinoSyncBtn: "🔄 Vivino Sync",
 		vivinoSyncing: "Vivino Syncing...",
-		scanListBtn: "🍽️ Scan List",
 		inventoryBtn: "📦 Inventory",
+		pairingsBtn: "🍽️ Pairings",
+		pairingsTitle: "Find a wine to go with what you're eating",
 		addWineBtn: "+ Add Wine",
 		fullAiAnalysisTitle: "Full AI analysis on all wines (disposition, ratings, price, description)",
 		refreshVivinoTitle: "Refresh all wines from Vivino (ratings, price, description)",
@@ -879,7 +980,6 @@ var ui$1 = {
 		syncCountConfirmBodyOne: "Vivino will be set to {n} bottle — the count in Cork Dork right now. The adjustment shows up in your Vivino cellar history and can be undone there.",
 		syncCountConfirmBodyMany: "Vivino will be set to {n} bottles — the count in Cork Dork right now. The adjustment shows up in your Vivino cellar history and can be undone there.",
 		syncCountConfirmBtn: "Yes — update Vivino",
-		scanListTitle: "Scan a wine list or receipt for ratings and value",
 		inventoryTitle: "Browse full cellar inventory",
 		unplacedTitle: "Bottles in Unassigned, not yet placed on a rack",
 		suggestionsTitle: "Suggestions read from where your bottles already are",
@@ -918,7 +1018,6 @@ var ui$1 = {
 		addBox: "Add Box",
 		addSlot: "Add Slot",
 		panelStored: "stored",
-		titleCredit: "originally created by @BaconWappedBitcoin",
 		copyBannerText: "Copying \"{name}\" — tap empty cells or bulk/box zones to place copies",
 		moveBannerText: "Moving \"{name}\" — tap a cell to place it",
 		buyListMoveBannerText: "Placing \"{name}\" — tap a cell in your cellar",
@@ -936,11 +1035,14 @@ var ui$1 = {
 		reorderRackTitle: "Tap to view and reorder this rack"
 	},
 	inventory: {
+		reviewBtn: "🔎 Inventory review",
+		reviewTitle: "Inventory review",
+		reviewIntro: "Re-check every bottle in the cellar. Choose a source:",
 		title: "📦 Inventory",
 		tabInventory: "Inventory",
 		tabHistory: "History",
 		loadingHistory: "Loading history...",
-		noHistory: "No removal history yet",
+		noHistory: "No history yet — bottles you drink or remove show up here",
 		winesRemoved: "{n} wines removed",
 		restoreBtn: "Restore",
 		clearHistoryBtn: "Clear History",
@@ -1009,6 +1111,11 @@ var ui$1 = {
 		filterNotAnalyzed: "Not analyzed",
 		pairsWith: "Pairs with",
 		anyFood: "Any food",
+		pairingTitle: "What are you eating?",
+		pairingIntro: "Pick a dish to see the wines that go with it.",
+		pairingEmpty: "No wines have food pairings yet. A Vivino lookup adds them.",
+		pairingBanner: "Pairs with {food}",
+		pairingChange: "Change",
 		missingPairingsHintOne: "{n} wine has no pairing data. Only Vivino supplies pairings — use “Fill from Vivino” below the list.",
 		missingPairingsHintMany: "{n} wines have no pairing data. Only Vivino supplies pairings — use “Fill from Vivino” below the list.",
 		country: "Country",
@@ -1099,7 +1206,18 @@ var ui$1 = {
 		racksWord: "racks",
 		buyListItemsWord: "buy list items",
 		createdLabel: "Created: {date}",
-		restoreNowBtn: "Restore Now"
+		restoreNowBtn: "Restore Now",
+		buyAgainOnly: "🛒 Buy again only",
+		noBuyAgain: "No wines marked “buy again” yet",
+		buyAgainTitle: "Buy again — on your Buy List",
+		addNotesBtn: "📝 Add notes",
+		editNotesBtn: "📝 Notes",
+		myRatingLabel: "My rating",
+		drinkNotesPlaceholder: "How was it? What did you pair it with?",
+		buyAgainLabel: "Buy again?",
+		buyAgainHint: "Adds it to your Buy List",
+		historySaved: "Saved",
+		historySaveFailed: "Failed to save"
 	},
 	addWine: {
 		title: "Add Wine",
@@ -1118,6 +1236,8 @@ var ui$1 = {
 		configureGeminiTitle: "Configure Gemini API key in integration settings",
 		takePhotoOfLabel: "Take a photo of the wine label",
 		requiresGeminiKey: "Requires Gemini API key in settings",
+		scanListTitle: "Scan Wine List",
+		scanListDesc: "Photo of a wine list or receipt — ratings and value",
 		orEnterManually: "or enter manually",
 		barcodePlaceholder: "Enter barcode...",
 		lookUpBtn: "Look Up",
@@ -1211,7 +1331,13 @@ var ui$1 = {
 		ratingsCountSuffix: " ({count} ratings)",
 		myRating: "My Rating",
 		aiScanBtn: "AI Scan",
-		scanLabelBtn: "Scan Label",
+		scanLabelBtn: "Label",
+		lookupBtn: "Vivino / AI",
+		lookupTitle: "Update this bottle's details from Vivino or AI",
+		lookupChooserTitle: "Update details",
+		lookupChooserIntro: "Choose a source:",
+		lookupVivinoDesc: "Ratings, description, grapes and food pairings from Vivino",
+		lookupAiDesc: "Full AI analysis: disposition, ratings, price, description",
 		scanLabelTitle: "Take a fresh photo of the label to update this bottle's photo and details",
 		resetAiContentBtn: "Reset text",
 		resetAiContentTitle: "Clear the description and food pairings so the next Vivino/AI lookup regenerates them from scratch (fixes text stuck in the wrong language)",
@@ -1289,7 +1415,14 @@ var ui$1 = {
 		chamberingReady: "🌡️ Ready to serve",
 		chamberingWarmUp: "🌡️ Take out {duration} before serving",
 		chamberingChill: "🧊 Chill ~15–20 min before serving",
-		aiLabel: "AI"
+		aiLabel: "AI",
+		drinkBtn: "Drink",
+		drinkTitle: "🍷 Cheers!",
+		drinkIntro: "Log how it was — or skip and add notes later from History.",
+		drinkNotesPlaceholder: "How was it? What did you pair it with?",
+		buyAgainLabel: "Buy again?",
+		buyAgainHint: "Adds it to your Buy List",
+		drinkConfirmBtn: "Drink it"
 	},
 	rack: {
 		failedToAddRack: "Failed to add rack.",
@@ -1502,7 +1635,9 @@ var toast$1 = {
 	tapToPlace: "Tap a cell to place \"{name}\"",
 	movedToCellar: "Moved \"{name}\" to cellar",
 	moveToCellarFailed: "Failed to move to cellar",
-	tapToMove: "Tap a cell to move \"{name}\""
+	tapToMove: "Tap a cell to move \"{name}\"",
+	wineDrunk: "Cheers! {name} is now in History",
+	removeWineFailed: "Failed to remove wine"
 };
 var en = {
 	wineType: wineType$1,
@@ -1510,6 +1645,7 @@ var en = {
 	storageRowType: storageRowType$1,
 	removalReason: removalReason$1,
 	wineLocation: wineLocation$1,
+	foodCategory: foodCategory$1,
 	ui: ui$1,
 	toast: toast$1
 };
@@ -1548,6 +1684,27 @@ var wineLocation = {
 	storage: "Stockage",
 	slot: "Emplacement"
 };
+var foodCategory = {
+	aperitif: "Apéritif & tapas",
+	charcuterie: "Charcuterie",
+	cheese: "Fromages",
+	seafood: "Fruits de mer",
+	fish: "Poissons",
+	duck: "Canard & foie gras",
+	poultry: "Volaille",
+	lamb: "Agneau",
+	game: "Gibier",
+	beef: "Bœuf & viandes rouges",
+	pork: "Porc & veau",
+	stew: "Plats mijotés & en sauce",
+	grill: "Grillades & barbecue",
+	spicy: "Cuisine épicée & du monde",
+	mediterranean: "Cuisine méditerranéenne",
+	salad: "Salades",
+	vegetarian: "Plats végétariens",
+	dessert: "Desserts",
+	other: "Autres accords"
+};
 var ui = {
 	common: {
 		cancel: "Annuler",
@@ -1560,13 +1717,15 @@ var ui = {
 		replace: "remplacer",
 		"new": "nouveau{plural}",
 		colonSep: " : ",
-		clearSearch: "Effacer la recherche"
+		clearSearch: "Effacer la recherche",
+		save: "Enregistrer"
 	},
 	disposition: {
 		drink: "Boire",
 		drinkNow: "À boire",
 		hold: "À garder",
-		pastPeak: "Sur le déclin"
+		pastPeak: "Sur le déclin",
+		past: "Déclin"
 	},
 	arrangement: {
 		header: "🧹 Rangement",
@@ -1625,8 +1784,9 @@ var ui = {
 		vivinoScanning: "Analyse Vivino en cours...",
 		vivinoSyncBtn: "🔄 Synchro Vivino",
 		vivinoSyncing: "Synchro Vivino en cours...",
-		scanListBtn: "🍽️ Scanner une liste",
 		inventoryBtn: "📦 Inventaire",
+		pairingsBtn: "🍽️ Accords",
+		pairingsTitle: "Trouver un vin pour accompagner votre plat",
 		addWineBtn: "+ Ajouter un vin",
 		fullAiAnalysisTitle: "Analyse IA complète sur tous les vins (disposition, notes, prix, description)",
 		refreshVivinoTitle: "Rafraîchir tous les vins depuis Vivino (notes, prix, description)",
@@ -1653,7 +1813,6 @@ var ui = {
 		syncCountConfirmBodyOne: "Vivino sera réglé sur {n} bouteille — le nombre actuel dans Cork Dork. L'ajustement apparaît dans l'historique de votre cave Vivino et peut y être annulé.",
 		syncCountConfirmBodyMany: "Vivino sera réglé sur {n} bouteilles — le nombre actuel dans Cork Dork. L'ajustement apparaît dans l'historique de votre cave Vivino et peut y être annulé.",
 		syncCountConfirmBtn: "Oui — mettre à jour Vivino",
-		scanListTitle: "Scanner une carte des vins ou un reçu pour obtenir les notes et la valeur",
 		inventoryTitle: "Parcourir l'inventaire complet de la cave",
 		unplacedTitle: "Bouteilles non assignées, pas encore placées",
 		suggestionsTitle: "Suggestions basées sur l'emplacement actuel de vos bouteilles",
@@ -1692,7 +1851,6 @@ var ui = {
 		addBox: "Ajouter une caisse",
 		addSlot: "Ajouter un emplacement",
 		panelStored: "stockées",
-		titleCredit: "créé à l'origine par @BaconWappedBitcoin",
 		copyBannerText: "Copie de « {name} » — touchez des cases vides ou des zones casier/caisse pour placer les copies",
 		moveBannerText: "Déplacement de « {name} » — touchez une case pour le placer",
 		buyListMoveBannerText: "Placement de « {name} » — touchez une case dans votre cave",
@@ -1710,11 +1868,14 @@ var ui = {
 		reorderRackTitle: "Toucher pour voir et réorganiser ce rack"
 	},
 	inventory: {
+		reviewBtn: "🔎 Revue d'inventaire",
+		reviewTitle: "Revue d'inventaire",
+		reviewIntro: "Revérifier chaque bouteille de la cave. Choisissez une source :",
 		title: "📦 Inventaire",
 		tabInventory: "Inventaire",
 		tabHistory: "Historique",
 		loadingHistory: "Chargement de l'historique...",
-		noHistory: "Aucun historique de retrait pour le moment",
+		noHistory: "Aucun historique — les bouteilles bues ou retirées apparaissent ici",
 		winesRemoved: "{n} vins retirés",
 		restoreBtn: "Restaurer",
 		clearHistoryBtn: "Effacer l'historique",
@@ -1783,6 +1944,11 @@ var ui = {
 		filterNotAnalyzed: "Non analysé",
 		pairsWith: "Accords avec",
 		anyFood: "Tout accord",
+		pairingTitle: "Que mangez-vous ?",
+		pairingIntro: "Choisissez un plat pour voir les vins qui l'accompagnent.",
+		pairingEmpty: "Aucun vin n'a encore d'accords mets-vins. Une recherche Vivino les ajoute.",
+		pairingBanner: "Accords avec {food}",
+		pairingChange: "Changer",
 		missingPairingsHintOne: "{n} vin n'a pas d'accords. Seul Vivino fournit les accords — utilisez « Compléter depuis Vivino » ci-dessous.",
 		missingPairingsHintMany: "{n} vins n'ont pas d'accords. Seul Vivino fournit les accords — utilisez « Compléter depuis Vivino » ci-dessous.",
 		country: "Pays",
@@ -1873,7 +2039,18 @@ var ui = {
 		racksWord: "racks",
 		buyListItemsWord: "éléments de liste d'achat",
 		createdLabel: "Créée le : {date}",
-		restoreNowBtn: "Restaurer maintenant"
+		restoreNowBtn: "Restaurer maintenant",
+		buyAgainOnly: "🛒 À racheter uniquement",
+		noBuyAgain: "Aucun vin marqué « à racheter » pour le moment",
+		buyAgainTitle: "À racheter — dans votre liste d'achat",
+		addNotesBtn: "📝 Ajouter des notes",
+		editNotesBtn: "📝 Notes",
+		myRatingLabel: "Ma note",
+		drinkNotesPlaceholder: "Comment était-il ? Avec quoi l'avez-vous accompagné ?",
+		buyAgainLabel: "À racheter ?",
+		buyAgainHint: "L'ajoute à votre liste d'achat",
+		historySaved: "Enregistré",
+		historySaveFailed: "Échec de l'enregistrement"
 	},
 	addWine: {
 		title: "Ajouter un vin",
@@ -1892,6 +2069,8 @@ var ui = {
 		configureGeminiTitle: "Configurez la clé API Gemini dans les paramètres de l'intégration",
 		takePhotoOfLabel: "Prenez une photo de l'étiquette du vin",
 		requiresGeminiKey: "Nécessite une clé API Gemini dans les paramètres",
+		scanListTitle: "Scanner une liste",
+		scanListDesc: "Photo d'une carte des vins ou d'un reçu — notes et valeur",
 		orEnterManually: "ou entrez manuellement",
 		barcodePlaceholder: "Entrez le code-barres...",
 		lookUpBtn: "Rechercher",
@@ -1985,7 +2164,13 @@ var ui = {
 		ratingsCountSuffix: " ({count} avis)",
 		myRating: "Ma note",
 		aiScanBtn: "Analyse IA",
-		scanLabelBtn: "Scanner l'étiquette",
+		scanLabelBtn: "Étiquette",
+		lookupBtn: "Vivino / IA",
+		lookupTitle: "Mettre à jour les détails de cette bouteille via Vivino ou l'IA",
+		lookupChooserTitle: "Mettre à jour les détails",
+		lookupChooserIntro: "Choisissez une source :",
+		lookupVivinoDesc: "Notes, description, cépages et accords mets-vins depuis Vivino",
+		lookupAiDesc: "Analyse IA complète : disposition, notes, prix, description",
 		scanLabelTitle: "Prendre une nouvelle photo de l'étiquette pour mettre à jour la photo et les détails de cette bouteille",
 		resetAiContentBtn: "Réinitialiser",
 		resetAiContentTitle: "Effacer la description et les accords mets-vins pour que la prochaine recherche Vivino/IA les régénère entièrement (corrige un texte resté dans la mauvaise langue)",
@@ -2063,7 +2248,14 @@ var ui = {
 		chamberingReady: "🌡️ Prêt à servir",
 		chamberingWarmUp: "🌡️ Sortir {duration} avant de servir",
 		chamberingChill: "🧊 Rafraîchir ~15–20 min avant de servir",
-		aiLabel: "IA"
+		aiLabel: "IA",
+		drinkBtn: "Boire",
+		drinkTitle: "🍷 Santé !",
+		drinkIntro: "Notez vos impressions — ou passez et ajoutez-les plus tard depuis l'Historique.",
+		drinkNotesPlaceholder: "Comment était-il ? Avec quoi l'avez-vous accompagné ?",
+		buyAgainLabel: "À racheter ?",
+		buyAgainHint: "L'ajoute à votre liste d'achat",
+		drinkConfirmBtn: "Boire"
 	},
 	rack: {
 		failedToAddRack: "Échec de l'ajout du rack.",
@@ -2276,7 +2468,9 @@ var toast = {
 	tapToPlace: "Touchez une case pour placer « {name} »",
 	movedToCellar: "« {name} » déplacé vers la cave",
 	moveToCellarFailed: "Échec du déplacement vers la cave",
-	tapToMove: "Touchez une case pour déplacer « {name} »"
+	tapToMove: "Touchez une case pour déplacer « {name} »",
+	wineDrunk: "Santé ! {name} est maintenant dans l'Historique",
+	removeWineFailed: "Échec du retrait du vin"
 };
 var fr = {
 	wineType: wineType,
@@ -2284,6 +2478,7 @@ var fr = {
 	storageRowType: storageRowType,
 	removalReason: removalReason,
 	wineLocation: wineLocation,
+	foodCategory: foodCategory,
 	ui: ui,
 	toast: toast
 };
@@ -3624,6 +3819,7 @@ ArrangementDialog.styles = [
         margin-top: 8px;
       }
     `,
+    touchStyles,
 ];
 __decorate([
     n$1({ type: Boolean })
@@ -3753,6 +3949,9 @@ let CabinetGrid = class CabinetGrid extends i$1 {
         // circle with no letter (green/blue/purple) — a settings-level choice,
         // not per-bottle.
         this.dispositionDisplay = "letter";
+        // Set when the card shows this rack on its own tab. The D/H/P badge then
+        // shrinks into the top-left corner so the label photo stays visible.
+        this.single = false;
         this._dragOverCell = null;
         // --- Long press (mobile move) ---
         this._longPressTimer = null;
@@ -3870,7 +4069,8 @@ let CabinetGrid = class CabinetGrid extends i$1 {
         const drinkEnd = drinkYears.length === 2 ? drinkYears[1] : drinkYears[0];
         return currentYear >= peakStart && currentYear <= drinkEnd;
     }
-    // The classic D/H/P letter badge — only in "letter" mode. In "dot" mode
+    // The classic D/H/P letter badge (a "Drink"/"Hold"/"Past" pill in the
+    // single-rack view) — only in "letter" mode. In "dot" mode
     // there's no badge at all; _dispositionRingStyle below draws the status
     // as a thicker colored ring around the bottle instead, so the photo
     // stays uncovered.
@@ -3878,7 +4078,9 @@ let CabinetGrid = class CabinetGrid extends i$1 {
         if (!dispClass || this.dispositionDisplay === "dot")
             return A$1;
         const peakClass = dispClass === "drink" && this._isInOrAfterPeakWindow(wine) ? "peak" : "";
-        return b$1 `<span class="${className} ${dispClass} ${peakClass}">${disp}</span>`;
+        // Single-rack view has room for a word instead of the bare letter.
+        const text = this.single ? this._t(`ui.disposition.${dispClass}`) : disp;
+        return b$1 `<span class="${className} ${dispClass} ${peakClass}">${text}</span>`;
     }
     // "dot" mode's ring: a thicker border colored by disposition (green/blue/
     // purple) instead of the classic centered badge — the whole point is to
@@ -4914,6 +5116,34 @@ CabinetGrid.styles = [
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
       }
 
+      /* Single-rack view: a short text pill ("Drink"/"Hold"/"Past") along
+         the bottom edge instead of covering the middle of the label. Same
+         colors as the badge; only the shape and position change. */
+      :host([single]) .cell .disposition,
+      :host([single]) .zone-bottle .disposition,
+      :host([single]) .zone-shelf-dot .disposition {
+        top: auto;
+        bottom: 4%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: auto;
+        height: auto;
+        max-width: 92%;
+        padding: 2px 6px;
+        border-radius: 999px;
+        border-width: 1px;
+        font-size: clamp(7px, 16cqi, 11px);
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* Lift the depth dots clear of the pill. */
+      :host([single]) .depth-dots {
+        bottom: 26%;
+      }
+
       .zone-bottle:hover {
         transform: scale(1.1);
       }
@@ -5252,7 +5482,33 @@ CabinetGrid.styles = [
           margin-bottom: 1px;
         }
       }
+
+      /* Touch: grid cells grow with the cabinet (see .cabinets-row in
+         wine-cellar-card.ts); bin bottles and the tappable title have fixed
+         sizes, so they're raised here. */
+      @media (pointer: coarse) {
+        .row {
+          gap: 3px;
+          margin-bottom: 3px;
+        }
+        .cabinet-name.clickable {
+          padding: 12px 0;
+        }
+        .zone-bottle {
+          width: 40px;
+          height: 40px;
+          font-size: 10px;
+        }
+        .bottom-zone {
+          gap: 8px;
+          min-height: 56px;
+        }
+        .zone-box-row {
+          padding: 8px;
+        }
+      }
     `,
+    touchStyles,
 ];
 __decorate([
     n$1({ attribute: false })
@@ -5275,6 +5531,9 @@ __decorate([
 __decorate([
     n$1({ type: String })
 ], CabinetGrid.prototype, "dispositionDisplay", void 0);
+__decorate([
+    n$1({ type: Boolean, reflect: true })
+], CabinetGrid.prototype, "single", void 0);
 __decorate([
     r$1()
 ], CabinetGrid.prototype, "_dragOverCell", void 0);
@@ -5414,6 +5673,18 @@ StarRating.styles = i$4 `
 
     .star svg {
       display: block;
+    }
+
+    /* Touch: tapping the left or right half of a star picks a half or a
+       whole point, so each half needs to be finger-sized. _onClick measures
+       the padded box, so the halves stay correct. */
+    @media (pointer: coarse) {
+      .star:not(.readonly) {
+        padding: 10px 6px;
+      }
+      :host {
+        gap: 0;
+      }
     }
 
     .rating-text {
@@ -5776,6 +6047,7 @@ LabelCamera.styles = [
         color: var(--wc-text-secondary);
       }
     `,
+    touchStyles,
 ];
 __decorate([
     n$1({ attribute: false })
@@ -5822,10 +6094,15 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
         this._saving = false;
         this._refreshing = false;
         this._analyzing = false;
+        this._showLookupChooser = false;
         this._resettingAiContent = false;
         this._scanningLabel = false;
         this._showLabelCamera = false;
         this._showRemoveConfirm = false;
+        this._showDrinkDialog = false;
+        this._drinkRating = 0;
+        this._drinkNotes = "";
+        this._drinkBuyAgain = false;
         this._pendingVivinoImage = null;
         this._showPhotoCamera = false;
         this._photoBusy = false;
@@ -6006,6 +6283,32 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
             // Show reason prompt for cellar wines
             this._showRemoveConfirm = true;
         }
+    }
+    _onDrink() {
+        if (!this.wine)
+            return;
+        this._drinkRating = this.wine.user_rating ?? 0;
+        this._drinkNotes = "";
+        this._drinkBuyAgain = false;
+        this._showDrinkDialog = true;
+    }
+    _confirmDrink() {
+        if (!this.wine)
+            return;
+        this.dispatchEvent(new CustomEvent("remove-wine", {
+            detail: {
+                wine_id: this.wine.id,
+                reason: "drank",
+                name: this.wine.name,
+                personal_rating: this._drinkRating || null,
+                drink_notes: this._drinkNotes.trim(),
+                buy_again: this._drinkBuyAgain,
+            },
+            bubbles: true,
+            composed: true,
+        }));
+        this._showDrinkDialog = false;
+        this._close();
     }
     _confirmRemove(reason) {
         if (!this.wine)
@@ -6194,6 +6497,25 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
             console.error("Vivino refresh failed", err);
         }
         this._refreshing = false;
+    }
+    // One "Vivino / AI" button: without an AI provider there's nothing to
+    // choose, so it goes straight to Vivino; otherwise it opens the same
+    // source chooser as the inventory review.
+    _onLookup() {
+        if (!this.hasGemini) {
+            this._refreshFromVivino();
+            return;
+        }
+        this._showLookupChooser = true;
+    }
+    _pickLookup(kind) {
+        this._showLookupChooser = false;
+        if (kind === "vivino")
+            this._refreshFromVivino();
+        else if (kind === "ai")
+            this._analyzeWithAI();
+        else
+            this._resetAiContent();
     }
     async _confirmAiFallback(remember) {
         this._aiFallbackReason = null;
@@ -6687,38 +7009,40 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
 
           ${!this._editingFields && (this.mode === "cellar" || this.mode === "buylist")
             ? b$1 `
-                <div class="actions">
-                  <button class="btn btn-primary" style="background:#8e24aa"
-                    ?disabled=${this._refreshing} @click=${this._refreshFromVivino}>
-                    ${this._refreshing ? "..." : "🍇 Vivino"}
-                  </button>
-                  ${this.hasGemini
-                ? b$1 `<button class="btn btn-primary" style="background:#1565c0"
-                        ?disabled=${this._analyzing} @click=${this._analyzeWithAI}>
-                        ${this._analyzing ? "..." : `🤖 ${this._t("ui.wineDetail.aiScanBtn")}`}
-                      </button>
-                      <button class="btn btn-primary" style="background:#2e7d32"
-                        ?disabled=${this._scanningLabel} @click=${() => (this._showLabelCamera = true)}
-                        title="${this._t('ui.wineDetail.scanLabelTitle')}">
-                        ${this._scanningLabel ? "..." : `📷 ${this._t("ui.wineDetail.scanLabelBtn")}`}
-                      </button>
-                      <button class="btn btn-primary" style="background:#78909c"
-                        ?disabled=${this._resettingAiContent} @click=${this._resetAiContent}
-                        title="${this._t('ui.wineDetail.resetAiContentTitle')}">
-                        ${this._resettingAiContent ? "..." : `♻️ ${this._t("ui.wineDetail.resetAiContentBtn")}`}
-                      </button>`
-                : A$1}
+                <div class="actions grouped">
                   ${this.mode === "cellar"
+                ? b$1 `<button class="btn btn-primary drink-btn" style="background:#722F37"
+                        @click=${this._onDrink}>🍷 ${this._t("ui.wineDetail.drinkBtn")}</button>`
+                : A$1}
+                  <div class="action-cards">
+                    <div class="action-card">
+                      <button class="btn btn-primary" style="background:#8e24aa"
+                        ?disabled=${this._refreshing || this._analyzing} @click=${this._onLookup}
+                        title="${this._t('ui.wineDetail.lookupTitle')}">
+                        ${this._refreshing || this._analyzing ? "..." : `🔎 ${this._t("ui.wineDetail.lookupBtn")}`}
+                      </button>
+                      ${this.hasGemini
+                ? b$1 `<button class="btn btn-primary" style="background:#2e7d32"
+                            ?disabled=${this._scanningLabel} @click=${() => (this._showLabelCamera = true)}
+                            title="${this._t('ui.wineDetail.scanLabelTitle')}">
+                            ${this._scanningLabel ? "..." : `📷 ${this._t("ui.wineDetail.scanLabelBtn")}`}
+                          </button>`
+                : A$1}
+                    </div>
+                    <div class="action-card">
+                      ${this.mode === "cellar"
                 ? b$1 `
-                        <button class="btn btn-primary" style="background:#546e7a" @click=${this._onCopy}>📋 ${this._t("ui.wineDetail.copyBtn")}</button>
-                        <button class="btn btn-primary" style="background:#6d4c41" @click=${this._onMove}>↔ ${this._t("ui.wineDetail.moveBtn")}</button>
-                        ${wine.cabinet_id
+                            <button class="btn btn-primary" style="background:#546e7a" @click=${this._onCopy}>📋 ${this._t("ui.wineDetail.copyBtn")}</button>
+                            <button class="btn btn-primary" style="background:#6d4c41" @click=${this._onMove}>↔ ${this._t("ui.wineDetail.moveBtn")}</button>
+                            ${wine.cabinet_id
                     ? b$1 `<button class="btn btn-primary" style="background:#ef6c00" @click=${this._moveToUnassigned}>📦 ${this._t("ui.wineDetail.unassignBtn")}</button>`
                     : A$1}
-                      `
+                          `
                 : A$1}
-                  <button class="btn btn-primary" style="background:#c62828"
-                    @click=${this._onRemove}>✕ ${this._t("ui.wineDetail.removeBtn")}</button>
+                      <button class="btn btn-primary" style="background:#c62828"
+                        @click=${this._onRemove}>✕ ${this._t("ui.wineDetail.removeBtn")}</button>
+                    </div>
+                  </div>
                 </div>
                 ${wine.vivino_checked_at || wine.ai_checked_at || wine.vivino_updated_at || wine.ai_updated_at
                 ? b$1 `
@@ -6945,6 +7269,40 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
               </div>
             </div>
           ` : A$1}
+          ${this._showDrinkDialog ? b$1 `
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10;border-radius:16px">
+              <div style="background:var(--wc-bg);border-radius:12px;padding:24px;max-width:340px;width:90%;text-align:center" @click=${(e) => e.stopPropagation()}>
+                <h3 style="margin:0 0 4px;font-size:1em;color:var(--wc-text)">${this._t("ui.wineDetail.drinkTitle")}</h3>
+                <p style="margin:0 0 12px;font-size:0.85em;color:var(--wc-text-secondary)">${this._t("ui.wineDetail.drinkIntro")}</p>
+                <div style="margin-bottom:10px">
+                  <star-rating
+                    .value=${this._drinkRating}
+                    @rating-change=${(e) => (this._drinkRating = e.detail.value)}
+                  ></star-rating>
+                </div>
+                <textarea
+                  rows="3"
+                  style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--wc-border);background:var(--wc-surface, transparent);color:var(--wc-text);font:inherit;font-size:0.85em;resize:vertical"
+                  placeholder="${this._t("ui.wineDetail.drinkNotesPlaceholder")}"
+                  .value=${this._drinkNotes}
+                  @input=${(e) => (this._drinkNotes = e.target.value)}
+                ></textarea>
+                <label style="display:flex;align-items:center;gap:8px;margin:10px 0 16px;font-size:0.9em;color:var(--wc-text);cursor:pointer;text-align:left">
+                  <input type="checkbox" .checked=${this._drinkBuyAgain}
+                    @change=${(e) => (this._drinkBuyAgain = e.target.checked)} />
+                  <span>🛒 ${this._t("ui.wineDetail.buyAgainLabel")}
+                    <small style="display:block;color:var(--wc-text-secondary)">${this._t("ui.wineDetail.buyAgainHint")}</small></span>
+                </label>
+                <div style="display:flex;gap:8px;justify-content:center">
+                  <button class="btn btn-primary" style="background:#722F37" @click=${this._confirmDrink}>🍷 ${this._t("ui.wineDetail.drinkConfirmBtn")}</button>
+                  <button
+                    style="padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.8em"
+                    @click=${() => (this._showDrinkDialog = false)}
+                  >${this._t("ui.common.cancel")}</button>
+                </div>
+              </div>
+            </div>
+          ` : A$1}
           ${this._pendingVivinoImage ? b$1 `
             <div style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10;border-radius:16px">
               <div style="background:var(--wc-bg);border-radius:12px;padding:24px;max-width:320px;width:90%;text-align:center" @click=${(e) => e.stopPropagation()}>
@@ -6997,6 +7355,36 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
                   <button
                     style="padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.85em"
                     @click=${() => (this._showLabelCamera = false)}
+                  >${this._t("ui.common.cancel")}</button>
+                </div>
+              </div>
+            </div>
+          ` : A$1}
+          ${this._showLookupChooser ? b$1 `
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10;border-radius:16px"
+              @click=${() => (this._showLookupChooser = false)}>
+              <div style="background:var(--wc-bg);border-radius:12px;padding:20px;max-width:320px;width:90%" @click=${(e) => e.stopPropagation()}>
+                <h3 style="margin:0 0 4px;font-size:1em;color:var(--wc-text)">${this._t("ui.wineDetail.lookupChooserTitle")}</h3>
+                <p style="margin:0 0 12px;font-size:0.85em;color:var(--wc-text-secondary)">${this._t("ui.wineDetail.lookupChooserIntro")}</p>
+                <div class="lookup-options">
+                  <button class="lookup-option" style="background:#8e24aa" @click=${() => this._pickLookup("vivino")}>
+                    <span>🍇 Vivino</span>
+                    <small>${this._t("ui.wineDetail.lookupVivinoDesc")}</small>
+                  </button>
+                  <button class="lookup-option" style="background:#1565c0" @click=${() => this._pickLookup("ai")}>
+                    <span>🤖 ${this._t("ui.wineDetail.aiScanBtn")}</span>
+                    <small>${this._t("ui.wineDetail.lookupAiDesc")}</small>
+                  </button>
+                  <button class="lookup-option" style="background:#78909c"
+                    ?disabled=${this._resettingAiContent} @click=${() => this._pickLookup("reset")}>
+                    <span>♻️ ${this._t("ui.wineDetail.resetAiContentBtn")}</span>
+                    <small>${this._t("ui.wineDetail.resetAiContentTitle")}</small>
+                  </button>
+                </div>
+                <div style="text-align:center">
+                  <button
+                    style="padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.8em"
+                    @click=${() => (this._showLookupChooser = false)}
                   >${this._t("ui.common.cancel")}</button>
                 </div>
               </div>
@@ -7503,6 +7891,72 @@ WineDetailDialog.styles = [
         white-space: nowrap;
       }
 
+      /* Bottle actions: a big Drink button on its own, then two cards —
+         look-up (Vivino/AI, label photo) and manage (copy/move/unassign/
+         remove) — so the everyday action isn't lost among the rest. */
+      .actions.grouped {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+
+      .action-cards {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .action-card {
+        flex: 1 1 auto;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+        padding: 8px;
+        border: 1px solid var(--wc-border);
+        border-radius: 12px;
+        background: var(--wc-hover);
+      }
+
+      .actions .btn.drink-btn {
+        font-size: 1.05em;
+        font-weight: 600;
+        padding: 12px 16px;
+        border-radius: 12px;
+      }
+
+      .lookup-options {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .lookup-option {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 14px;
+        color: #fff;
+        cursor: pointer;
+        text-align: left;
+        font-size: 0.9em;
+        font-weight: 500;
+      }
+
+      .lookup-option small {
+        font-size: 0.8em;
+        font-weight: 400;
+        opacity: 0.85;
+      }
+
+      .lookup-option:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+
       /* Edit form styles */
       .edit-form {
         padding: 0 20px 16px;
@@ -7573,7 +8027,29 @@ WineDetailDialog.styles = [
           grid-template-columns: 1fr;
         }
       }
+
+      /* Touch: the photo dots stay small visually but get a finger-sized
+         invisible hit area; the location link gets a full-height row. */
+      @media (pointer: coarse) {
+        .photo-dots {
+          gap: 16px;
+        }
+        .photo-dot {
+          position: relative;
+          width: 10px;
+          height: 10px;
+        }
+        .photo-dot::after {
+          content: "";
+          position: absolute;
+          inset: -14px;
+        }
+        .wine-location {
+          min-height: 44px;
+        }
+      }
     `,
+    touchStyles,
 ];
 __decorate([
     n$1({ attribute: false })
@@ -7622,6 +8098,9 @@ __decorate([
 ], WineDetailDialog.prototype, "_analyzing", void 0);
 __decorate([
     r$1()
+], WineDetailDialog.prototype, "_showLookupChooser", void 0);
+__decorate([
+    r$1()
 ], WineDetailDialog.prototype, "_resettingAiContent", void 0);
 __decorate([
     r$1()
@@ -7632,6 +8111,18 @@ __decorate([
 __decorate([
     r$1()
 ], WineDetailDialog.prototype, "_showRemoveConfirm", void 0);
+__decorate([
+    r$1()
+], WineDetailDialog.prototype, "_showDrinkDialog", void 0);
+__decorate([
+    r$1()
+], WineDetailDialog.prototype, "_drinkRating", void 0);
+__decorate([
+    r$1()
+], WineDetailDialog.prototype, "_drinkNotes", void 0);
+__decorate([
+    r$1()
+], WineDetailDialog.prototype, "_drinkBuyAgain", void 0);
 __decorate([
     r$1()
 ], WineDetailDialog.prototype, "_pendingVivinoImage", void 0);
@@ -10246,6 +10737,7 @@ BarcodeScanner.styles = [
         font-style: italic;
       }
     `,
+    touchStyles,
 ];
 __decorate([
     n$1({ attribute: false })
@@ -10363,6 +10855,11 @@ let AddWineDialog = class AddWineDialog extends i$1 {
         this._scanMode = "idle";
         this.open = false;
         this.dispatchEvent(new CustomEvent("close"));
+    }
+    /** Hand off to the wine-list scanner: the card closes this dialog and opens that one. */
+    _openScanList() {
+        this._close();
+        this.dispatchEvent(new CustomEvent("scan-list"));
     }
     async _lookupBarcode() {
         if (!this._barcode.trim())
@@ -10812,6 +11309,22 @@ let AddWineDialog = class AddWineDialog extends i$1 {
               <div class="scan-option-desc">
                 ${this._hasGemini
             ? this._t("ui.addWine.takePhotoOfLabel")
+            : this._t("ui.addWine.requiresGeminiKey")}
+              </div>
+            </div>
+          </button>
+
+          <button
+            class="scan-option ${this._hasGemini ? "" : "disabled"}"
+            @click=${() => this._hasGemini && this._openScanList()}
+            title=${this._hasGemini ? "" : this._t("ui.addWine.configureGeminiTitle")}
+          >
+            <span class="scan-option-icon">🍽️</span>
+            <div class="scan-option-text">
+              <div class="scan-option-title">${this._t("ui.addWine.scanListTitle")}</div>
+              <div class="scan-option-desc">
+                ${this._hasGemini
+            ? this._t("ui.addWine.scanListDesc")
             : this._t("ui.addWine.requiresGeminiKey")}
               </div>
             </div>
@@ -11895,6 +12408,7 @@ AddWineDialog.styles = [
         flex-shrink: 0;
       }
     `,
+    touchStyles,
 ];
 __decorate([
     n$1({ type: Boolean })
@@ -12193,7 +12707,18 @@ WineSearchBar.styles = [
         color: #fff;
         border-color: var(--wc-primary);
       }
+
+      /* Touch: room for the 44px clear button inside the field. */
+      @media (pointer: coarse) {
+        input {
+          padding-right: 52px;
+        }
+        .search-clear {
+          right: 0;
+        }
+      }
     `,
+    touchStyles,
 ];
 __decorate([
     n$1({ attribute: false })
@@ -13854,6 +14379,7 @@ RackSettingsDialog.styles = [
         background: rgba(198, 40, 40, 0.05);
       }
     `,
+    touchStyles,
 ];
 __decorate([
     n$1({ type: Boolean })
@@ -14723,6 +15249,7 @@ WineListDialog.styles = [
         }
       }
     `,
+    touchStyles,
 ];
 __decorate([
     n$1({ type: Boolean })
@@ -14776,77 +15303,85 @@ WineListDialog = __decorate([
     t$2("wine-list-dialog")
 ], WineListDialog);
 
-const OTHER_LABEL = "Autres accords";
+const OTHER_FOOD_CATEGORY = "other";
 const FOOD_CATEGORIES = [
     {
-        label: "Apéritif & tapas",
-        keywords: ["aperitif", "tapas", "gougere", "amuse-bouche", "amuse bouche"],
+        id: "aperitif",
+        keywords: ["aperitif", "tapas", "gougere", "amuse-bouche", "amuse bouche", "appetizer", "snack", "finger food"],
     },
     {
-        label: "Charcuterie",
-        keywords: ["charcuterie", "rillette", "saucisson", "jambon", "pate", "terrine", "salami", "chorizo"],
+        id: "charcuterie",
+        keywords: ["charcuterie", "rillette", "saucisson", "jambon", "pate", "terrine", "salami", "chorizo", "cured meat", "ham", "prosciutto"],
     },
     {
-        label: "Fromages",
-        keywords: ["fromage", "roquefort", "comte", "chevre", "brie", "camembert", "munster", "reblochon", "morbier", "parmesan"],
+        id: "cheese",
+        keywords: ["fromage", "roquefort", "comte", "chevre", "brie", "camembert", "munster", "reblochon", "morbier", "parmesan", "cheese"],
     },
     {
-        label: "Fruits de mer",
-        keywords: ["fruits de mer", "huitre", "crevette", "homard", "crustace", "coquille", "moule", "langouste", "crabe", "sushi", "sashimi"],
+        id: "seafood",
+        keywords: ["fruits de mer", "huitre", "crevette", "homard", "crustace", "coquille", "moule", "langouste", "crabe", "sushi", "sashimi", "shellfish", "seafood", "oyster", "shrimp", "prawn", "lobster", "crab", "mussel", "scallop"],
     },
     {
-        label: "Poissons",
-        keywords: ["poisson", "saumon", "cabillaud", "sole", "brochet", "truite", "papillote", "thon", "dorade", "morue", "bar"],
+        id: "fish",
+        keywords: ["poisson", "saumon", "cabillaud", "sole", "brochet", "truite", "papillote", "thon", "dorade", "morue", "bar", "fish", "salmon", "tuna", "cod", "trout", "halibut"],
     },
     {
-        label: "Canard & foie gras",
-        keywords: ["canard", "magret", "foie gras"],
+        id: "duck",
+        keywords: ["canard", "magret", "foie gras", "duck"],
     },
     {
-        label: "Volaille",
-        keywords: ["volaille", "poulet", "poularde", "dinde", "pintade", "chapon"],
+        id: "poultry",
+        keywords: ["volaille", "poulet", "poularde", "dinde", "pintade", "chapon", "poultry", "chicken", "turkey"],
     },
     {
-        label: "Agneau",
-        keywords: ["agneau", "gigot"],
+        id: "lamb",
+        keywords: ["agneau", "gigot", "lamb"],
     },
     {
-        label: "Gibier",
-        keywords: ["gibier", "cerf", "chevreuil", "sanglier", "biche", "faisan", "perdrix", "lievre"],
+        id: "game",
+        keywords: ["gibier", "cerf", "chevreuil", "sanglier", "biche", "faisan", "perdrix", "lievre", "game", "venison", "deer", "boar", "pheasant", "rabbit"],
     },
     {
-        label: "Bœuf & viandes rouges",
-        keywords: ["boeuf", "entrecote", "steak", "tournedos", "viande rouge", "viandes rouges", "cote de boeuf"],
+        id: "beef",
+        keywords: ["boeuf", "entrecote", "steak", "tournedos", "viande rouge", "viandes rouges", "cote de boeuf", "beef", "red meat"],
     },
     {
-        label: "Plats mijotés & en sauce",
-        keywords: ["daube", "bourguignon", "carbonnade", "civet", "cassoulet", "mijote", "en sauce", "ragout", "pot-au-feu", "blanquette", "estouffade"],
+        id: "pork",
+        keywords: ["porc", "veau", "pork", "veal"],
     },
     {
-        label: "Grillades & barbecue",
-        keywords: ["grillade", "grille", "barbecue", "brochette"],
+        id: "stew",
+        keywords: ["daube", "bourguignon", "carbonnade", "civet", "cassoulet", "mijote", "en sauce", "ragout", "pot-au-feu", "blanquette", "estouffade", "stew", "braise"],
     },
     {
-        label: "Cuisine épicée & du monde",
-        keywords: ["curry", "epice", "asiatique", "wok", "tex-mex", "mexicain", "indien", "thai", "szechuan"],
+        id: "grill",
+        keywords: ["grillade", "grille", "barbecue", "brochette", "grilled", "bbq"],
     },
     {
-        label: "Cuisine méditerranéenne",
-        keywords: ["~mediterran", "~provenc", "ratatouille", "tajine"],
+        id: "spicy",
+        keywords: ["curry", "epice", "asiatique", "wok", "tex-mex", "mexicain", "indien", "thai", "szechuan", "spicy", "asian", "mexican", "indian"],
     },
     {
-        label: "Salades",
-        keywords: ["salade"],
+        id: "mediterranean",
+        keywords: ["~mediterran", "~provenc", "ratatouille", "tajine", "pasta", "pizza"],
     },
     {
-        label: "Plats végétariens",
-        keywords: ["risotto", "legume", "~vegetarien", "asperge", "champignon", "quiche"],
+        id: "salad",
+        keywords: ["salade", "salad"],
     },
     {
-        label: "Desserts",
-        keywords: ["dessert", "chocolat", "tarte", "patisserie", "gateau", "glace", "sorbet", "fruit"],
+        id: "vegetarian",
+        keywords: ["risotto", "legume", "~vegetarien", "asperge", "champignon", "quiche", "~vegetarian", "vegetable", "vegan", "mushroom", "asparagus"],
+    },
+    {
+        id: "dessert",
+        keywords: ["dessert", "chocolat", "tarte", "patisserie", "gateau", "glace", "sorbet", "fruit", "chocolate", "cake", "pastry", "fruity"],
     },
 ];
+// Every id categorizeFoodPairing() can return, so a saved filter value
+// from an older build (which stored the French label itself) can be
+// recognised as stale and reset.
+const FOOD_CATEGORY_IDS = [...FOOD_CATEGORIES.map((c) => c.id), OTHER_FOOD_CATEGORY];
 // Two matching modes per keyword:
 // - default: word-boundary match allowing an optional French "e"/"s"/"es"
 //   suffix (singular/plural + masc/fem agreement) without an open wildcard,
@@ -14867,22 +15402,44 @@ function matchesKeyword(haystack, keyword) {
     }
     return new RegExp(`\\b${keyword}(?:e?s?)\\b`).test(haystack);
 }
-// Maps one split pairing ("daube de bœuf") to its generic category label
-// ("Plats mijotés & en sauce"). Falls back to a shared "Autres accords"
+// Maps one split pairing ("daube de bœuf", "Beef") to its generic category
+// id ("stew", "beef"). Falls back to a shared "other"
 // bucket when nothing matches, rather than showing the raw specific text —
 // keeping the filter list short is the whole point of this function.
 function categorizeFoodPairing(pairing) {
     const haystack = normalizeText(pairing);
     if (!haystack)
-        return OTHER_LABEL;
+        return OTHER_FOOD_CATEGORY;
     for (const category of FOOD_CATEGORIES) {
         if (category.keywords.some((kw) => matchesKeyword(haystack, kw))) {
-            return category.label;
+            return category.id;
         }
     }
-    return OTHER_LABEL;
+    return OTHER_FOOD_CATEGORY;
 }
 
+// One icon per food category, for the Pairings chooser.
+const FOOD_ICONS = {
+    aperitif: "🫒",
+    charcuterie: "🥓",
+    cheese: "🧀",
+    seafood: "🦪",
+    fish: "🐟",
+    duck: "🦆",
+    poultry: "🍗",
+    lamb: "🐑",
+    game: "🦌",
+    beef: "🥩",
+    pork: "🐖",
+    stew: "🍲",
+    grill: "🔥",
+    spicy: "🌶️",
+    mediterranean: "🍅",
+    salad: "🥗",
+    vegetarian: "🥦",
+    dessert: "🍰",
+    other: "🍽️",
+};
 // Persisted so the inventory reopens the way it was left; the search query is
 // deliberately excluded — a stale query silently hiding the cellar is far more
 // confusing than a stale sort order.
@@ -14909,6 +15466,14 @@ let InventoryDialog = class InventoryDialog extends i$1 {
         this.hasGemini = false;
         this.enableWhisky = false;
         this.currency = "USD";
+        // Batch AI / Vivino scans run in the card (they outlive this dialog); these
+        // only mirror their progress so the review button can show it.
+        this.analyzing = false;
+        this.batchVivino = false;
+        // Opened from the card's "Pairings" button: start on the food chooser,
+        // then show the inventory filtered to what goes with the pick.
+        this.pairingMode = false;
+        this._showPairingPicker = false;
         this._searchQuery = "";
         this._typeFilter = DEFAULT_FILTERS.typeFilter;
         this._dispositionFilter = DEFAULT_FILTERS.dispositionFilter;
@@ -14946,9 +15511,16 @@ let InventoryDialog = class InventoryDialog extends i$1 {
         this._enriching = "";
         this._confirmEnrich = "";
         this._confirmEnrichRetry = false;
+        this._showReview = false;
         this._viewMode = "inventory";
         this._historyItems = [];
         this._historyLoading = false;
+        this._buyAgainOnly = false;
+        this._editingHistoryId = "";
+        this._editRating = 0;
+        this._editNotes = "";
+        this._editBuyAgain = false;
+        this._historySaving = false;
     }
     // HA websocket errors can arrive as a plain string, an Error, or a
     // {code, message} object depending on where they're thrown from — a bare
@@ -15000,6 +15572,9 @@ let InventoryDialog = class InventoryDialog extends i$1 {
             this._restoreData = null;
             this._viewMode = "inventory";
             this._historyItems = [];
+            this._buyAgainOnly = false;
+            this._editingHistoryId = "";
+            this._showPairingPicker = this.pairingMode;
         }
     }
     _close() {
@@ -15029,8 +15604,11 @@ let InventoryDialog = class InventoryDialog extends i$1 {
                 this._countryFilter = p.countryFilter;
             if (p.grapeFilter)
                 this._grapeFilter = p.grapeFilter;
-            if (p.foodFilter)
+            // Older builds saved the French category label itself; only a known
+            // category id is a valid filter now.
+            if (p.foodFilter && (p.foodFilter === "all" || FOOD_CATEGORY_IDS.includes(p.foodFilter))) {
                 this._foodFilter = p.foodFilter;
+            }
             if (p.cabinetFilter)
                 this._cabinetFilter = p.cabinetFilter;
             if (typeof p.minRating === "number")
@@ -15126,8 +15704,60 @@ let InventoryDialog = class InventoryDialog extends i$1 {
     // balloon this dropdown into dozens of near-synonyms. Each split pairing
     // is mapped to a generic category (see foodCategories.ts) so the filter
     // stays short — the wine detail view still shows the original AI text.
+    // Options are category ids, sorted by their translated label.
     _foodOptions() {
-        return collectFacet(this.wines, (w) => splitMulti(w.food_pairings).map(categorizeFoodPairing));
+        return collectFacet(this.wines, (w) => splitMulti(w.food_pairings).map(categorizeFoodPairing)).sort((a, b) => this._foodLabel(a).localeCompare(this._foodLabel(b)));
+    }
+    _foodLabel(id) {
+        return this._t(`foodCategory.${id}`);
+    }
+    // Picking a food clears every other filter first: a leftover saved type
+    // or rating filter would otherwise hide wines that pair, with nothing on
+    // screen saying why.
+    _pickPairing(id) {
+        this._clearFilters();
+        this._foodFilter = id;
+        this._savePrefs();
+        this._showPairingPicker = false;
+    }
+    _renderPairingPicker() {
+        if (!this._showPairingPicker)
+            return A$1;
+        const counts = new Map();
+        for (const w of this.wines) {
+            for (const id of new Set(splitMulti(w.food_pairings).map(categorizeFoodPairing))) {
+                counts.set(id, (counts.get(id) ?? 0) + 1);
+            }
+        }
+        const options = this._foodOptions();
+        const missing = this._winesWithoutPairings();
+        return b$1 `
+      <div class="inv-confirm-overlay" @click=${() => (this._showPairingPicker = false)}>
+        <div class="inv-confirm-box inv-pairing-box" @click=${(e) => e.stopPropagation()}>
+          <h3>${this._t("ui.inventory.pairingTitle")}</h3>
+          <p>${options.length ? this._t("ui.inventory.pairingIntro") : this._t("ui.inventory.pairingEmpty")}</p>
+          <div class="inv-pairing-grid">
+            ${options.map((id) => b$1 `
+                <button class="inv-pairing-option" @click=${() => this._pickPairing(id)}>
+                  <span class="inv-pairing-icon">${FOOD_ICONS[id] ?? "🍽️"}</span>
+                  <span class="inv-pairing-label">${this._foodLabel(id)}</span>
+                  <small>${counts.get(id) ?? 0}</small>
+                </button>
+              `)}
+          </div>
+          ${missing
+            ? b$1 `<small class="inv-pairing-missing">${missing > 1
+                ? this._t("ui.inventory.missingPairingsHintMany", { n: missing })
+                : this._t("ui.inventory.missingPairingsHintOne", { n: missing })}</small>`
+            : A$1}
+          <div class="inv-confirm-btns">
+            <button class="inv-confirm-cancel" @click=${() => (this._showPairingPicker = false)}>
+              ${this._t("ui.common.cancel")}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
     }
     _winesWithoutPairings() {
         return this.wines.filter((w) => !splitMulti(w.food_pairings).length).length;
@@ -15381,6 +16011,69 @@ let InventoryDialog = class InventoryDialog extends i$1 {
             this._statusMsg = this._t("ui.inventory.restoreWineFailed");
         }
     }
+    _startEditHistory(item) {
+        if (this._editingHistoryId === item.id) {
+            this._editingHistoryId = "";
+            return;
+        }
+        this._editingHistoryId = item.id;
+        this._editRating = item.personal_rating ?? 0;
+        this._editNotes = item.drink_notes || "";
+        this._editBuyAgain = !!item.buy_again;
+    }
+    async _saveHistoryEntry(historyId) {
+        this._historySaving = true;
+        try {
+            const result = await this.hass.callWS({
+                type: "wine_cellar/update_history_entry",
+                history_id: historyId,
+                personal_rating: this._editRating || null,
+                drink_notes: this._editNotes.trim(),
+                buy_again: this._editBuyAgain,
+            });
+            this._historyItems = this._historyItems.map((i) => (i.id === historyId ? result.entry : i));
+            this._editingHistoryId = "";
+            this._statusMsg = this._t("ui.inventory.historySaved");
+            // Buy again changes the Buy List the card shows.
+            this.dispatchEvent(new CustomEvent("wine-updated", { bubbles: true, composed: true }));
+        }
+        catch (err) {
+            console.error("Failed to save history entry", err);
+            this._statusMsg = this._t("ui.inventory.historySaveFailed");
+        }
+        this._historySaving = false;
+    }
+    _renderHistoryEditor(item) {
+        return b$1 `
+      <div class="inv-history-editor">
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85em;color:var(--wc-text-secondary)">
+          ${this._t("ui.inventory.myRatingLabel")}
+          <star-rating
+            .value=${this._editRating}
+            .size=${22}
+            @rating-change=${(e) => (this._editRating = e.detail.value)}
+          ></star-rating>
+        </div>
+        <textarea
+          rows="3"
+          placeholder="${this._t("ui.inventory.drinkNotesPlaceholder")}"
+          .value=${this._editNotes}
+          @input=${(e) => (this._editNotes = e.target.value)}
+        ></textarea>
+        <label>
+          <input type="checkbox" .checked=${this._editBuyAgain}
+            @change=${(e) => (this._editBuyAgain = e.target.checked)} />
+          <span>🛒 ${this._t("ui.inventory.buyAgainLabel")}
+            <small style="color:var(--wc-text-secondary)"> — ${this._t("ui.inventory.buyAgainHint")}</small></span>
+        </label>
+        <div class="inv-editor-btns">
+          <button class="inv-btn" @click=${() => (this._editingHistoryId = "")}>${this._t("ui.common.cancel")}</button>
+          <button class="inv-btn active" ?disabled=${this._historySaving}
+            @click=${() => this._saveHistoryEntry(item.id)}>${this._t("ui.common.save")}</button>
+        </div>
+      </div>
+    `;
+    }
     _formatReason(reason) {
         const labels = getRemovalReasons(this.hass?.language);
         return labels.find((r) => r.id === reason)?.label || reason;
@@ -15408,26 +16101,52 @@ let InventoryDialog = class InventoryDialog extends i$1 {
         </div>
       `;
         }
+        const buyAgainCount = this._historyItems.filter((i) => i.buy_again).length;
+        const items = this._buyAgainOnly ? this._historyItems.filter((i) => i.buy_again) : this._historyItems;
         return b$1 `
       ${this._renderStorageInfo()}
+      <div class="inv-history-filter">
+        <button class="inv-btn ${this._buyAgainOnly ? "active" : ""}"
+          @click=${() => (this._buyAgainOnly = !this._buyAgainOnly)}
+        >${this._t("ui.inventory.buyAgainOnly")} (${buyAgainCount})</button>
+      </div>
       <div class="inv-list">
-        ${this._historyItems.map(item => b$1 `
+        ${items.length === 0
+            ? b$1 `<div class="inv-empty">${this._t("ui.inventory.noBuyAgain")}</div>`
+            : A$1}
+        ${items.map(item => b$1 `
           <div class="inv-history-item">
             ${item.image_url
             ? b$1 `<img class="inv-thumb" src="${item.image_url}" alt="" loading="lazy" />`
             : b$1 `<div class="inv-dot" style="background:${WINE_TYPE_COLORS[item.type] || "#999"}"></div>`}
             <div class="inv-info">
-              <div class="inv-name">${item.name}</div>
+              <div class="inv-name">
+                ${item.buy_again
+            ? b$1 `<span class="inv-buy-again" title="${this._t("ui.inventory.buyAgainTitle")}">🛒</span>`
+            : A$1}${item.name}
+              </div>
               <div class="inv-meta">
                 ${item.winery}${item.vintage ? ` · ${item.vintage}` : ""}
                 · <span class="inv-reason-badge">${this._formatReason(item.reason)}</span>
               </div>
+              ${item.personal_rating
+            ? b$1 `<star-rating .value=${item.personal_rating} .size=${14} readonly></star-rating>`
+            : A$1}
+              ${item.drink_notes ? b$1 `<div class="inv-drink-notes">${item.drink_notes}</div>` : A$1}
             </div>
             <div class="inv-right">
               ${item.price ? b$1 `<div class="inv-price">${this.currency} ${item.price.toFixed(0)}</div>` : A$1}
               <div class="inv-location">${this._formatDate(item.removed_at)}</div>
-              <button class="inv-btn" style="margin-top:4px" @click=${() => this._restoreFromHistory(item.id)}>${this._t("ui.inventory.restoreBtn")}</button>
+              <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px;align-items:flex-end">
+                <button class="inv-btn" @click=${() => this._startEditHistory(item)}>
+                  ${item.drink_notes || item.personal_rating
+            ? this._t("ui.inventory.editNotesBtn")
+            : this._t("ui.inventory.addNotesBtn")}
+                </button>
+                <button class="inv-btn" @click=${() => this._restoreFromHistory(item.id)}>${this._t("ui.inventory.restoreBtn")}</button>
+              </div>
             </div>
+            ${this._editingHistoryId === item.id ? this._renderHistoryEditor(item) : A$1}
           </div>
         `)}
       </div>
@@ -15481,6 +16200,39 @@ let InventoryDialog = class InventoryDialog extends i$1 {
         ${this._renderEnrichRow("ai", needAI, false, b$1 `<strong>${needAI.length}</strong> ${this._t("ui.inventory.enrichMissingAI")}`, this._t("ui.inventory.analyzeWithAi"))}
         ${this._renderEnrichRow("vivino", missVivino, true, b$1 `<strong>${missVivino.length}</strong> ${this._t("ui.inventory.enrichRetryVivino")}`, this._t("ui.inventory.retryVivino"))}
         ${this._renderEnrichRow("ai", missAI, true, b$1 `<strong>${missAI.length}</strong> ${this._t("ui.inventory.enrichRetryAI")}`, this._t("ui.inventory.retryAI"))}
+      </div>
+    `;
+    }
+    _startReview(kind) {
+        this._showReview = false;
+        this.dispatchEvent(new CustomEvent(kind === "ai" ? "batch-ai-scan" : "batch-vivino-scan"));
+    }
+    _renderReviewChooser() {
+        if (!this._showReview)
+            return A$1;
+        return b$1 `
+      <div class="inv-confirm-overlay" @click=${() => (this._showReview = false)}>
+        <div class="inv-confirm-box" @click=${(e) => e.stopPropagation()}>
+          <h3>${this._t("ui.inventory.reviewTitle")}</h3>
+          <p>${this._t("ui.inventory.reviewIntro")}</p>
+          <div class="inv-review-options">
+            ${this.hasGemini ? b$1 `
+              <button class="inv-review-option" style="background:#1565c0" @click=${() => this._startReview("ai")}>
+                <span>${this._t("ui.card.aiBatchScanBtn")}</span>
+                <small>${this._t("ui.card.fullAiAnalysisTitle")}</small>
+              </button>
+            ` : A$1}
+            <button class="inv-review-option" style="background:#8e24aa" @click=${() => this._startReview("vivino")}>
+              <span>${this._t("ui.card.vivinoBatchScanBtn")}</span>
+              <small>${this._t("ui.card.refreshVivinoTitle")}</small>
+            </button>
+          </div>
+          <div class="inv-confirm-btns">
+            <button class="inv-confirm-cancel" @click=${() => (this._showReview = false)}>
+              ${this._t("ui.common.cancel")}
+            </button>
+          </div>
+        </div>
       </div>
     `;
     }
@@ -16036,7 +16788,7 @@ let InventoryDialog = class InventoryDialog extends i$1 {
         }}
           >
             <option value="all" ?selected=${this._foodFilter === "all"}>${this._t("ui.inventory.anyFood")}</option>
-            ${foodOptions.map((f) => b$1 `<option value=${f} ?selected=${this._foodFilter === f}>${f}</option>`)}
+            ${foodOptions.map((f) => b$1 `<option value=${f} ?selected=${this._foodFilter === f}>${this._foodLabel(f)}</option>`)}
           </select>
           ${missingPairings
             ? b$1 `<small class="inv-filter-hint"
@@ -16250,7 +17002,20 @@ let InventoryDialog = class InventoryDialog extends i$1 {
           <!-- Header -->
           <div class="inv-header">
             <span class="inv-header-title">${this._t("ui.inventory.title")}</span>
-            <button class="inv-close" @click=${this._close}>✕</button>
+            <div class="inv-header-actions">
+              <button
+                class="inv-review-btn"
+                @click=${() => (this._showReview = true)}
+                ?disabled=${this.analyzing || this.batchVivino}
+              >
+                ${this.analyzing
+            ? this._t("ui.card.aiScanning")
+            : this.batchVivino
+                ? this._t("ui.card.vivinoScanning")
+                : this._t("ui.inventory.reviewBtn")}
+              </button>
+              <button class="inv-close" @click=${this._close}>✕</button>
+            </div>
           </div>
 
           <!-- Inventory / History Toggle -->
@@ -16374,6 +17139,17 @@ let InventoryDialog = class InventoryDialog extends i$1 {
           </div>
 
           ${this._showFilters ? this._renderFilterPanel(missingPairings) : A$1}
+
+          ${this.pairingMode && this._foodFilter !== "all"
+            ? b$1 `
+                <div class="inv-pairing-banner">
+                  <span>${FOOD_ICONS[this._foodFilter] ?? "🍽️"} ${this._t("ui.inventory.pairingBanner", { food: this._foodLabel(this._foodFilter) })}</span>
+                  <button class="inv-clear-filters" @click=${() => (this._showPairingPicker = true)}>
+                    ${this._t("ui.inventory.pairingChange")}
+                  </button>
+                </div>
+              `
+            : A$1}
 
           ${narrowed
             ? b$1 `
@@ -16538,6 +17314,8 @@ let InventoryDialog = class InventoryDialog extends i$1 {
             : A$1}
 
           ${this._renderEnrichConfirm()}
+          ${this._renderReviewChooser()}
+          ${this._renderPairingPicker()}
 
           <!-- CSV Import Mode Overlay -->
           ${this._confirmImport && this._pendingImport
@@ -16668,6 +17446,119 @@ InventoryDialog.styles = [
 
       .inv-close:hover {
         background: var(--wc-hover);
+      }
+
+      .inv-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .inv-review-btn {
+        background: #37474f;
+        color: #fff;
+        border: none;
+        border-radius: 16px;
+        padding: 5px 12px;
+        font-size: 0.8em;
+        cursor: pointer;
+      }
+
+      .inv-review-btn:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+
+      .inv-review-options {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .inv-review-option {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 14px;
+        color: #fff;
+        cursor: pointer;
+        text-align: left;
+        font-size: 0.9em;
+        font-weight: 500;
+      }
+
+      .inv-pairing-box {
+        max-width: 520px;
+        max-height: 85%;
+        overflow-y: auto;
+      }
+
+      .inv-pairing-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .inv-pairing-option {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        padding: 10px 6px;
+        border: 1px solid var(--wc-border);
+        border-radius: 10px;
+        background: var(--wc-hover);
+        color: var(--wc-text);
+        cursor: pointer;
+        font-size: 0.8em;
+      }
+
+      .inv-pairing-option:hover {
+        border-color: var(--wc-accent, #722f37);
+      }
+
+      .inv-pairing-icon {
+        font-size: 1.8em;
+        line-height: 1.2;
+      }
+
+      .inv-pairing-label {
+        font-weight: 500;
+        text-align: center;
+      }
+
+      .inv-pairing-option small {
+        color: var(--wc-text-secondary);
+      }
+
+      .inv-pairing-missing {
+        display: block;
+        margin-bottom: 12px;
+        color: var(--wc-text-secondary);
+      }
+
+      .inv-pairing-banner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin: 0 16px 8px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        background: var(--wc-hover);
+        font-size: 0.9em;
+        font-weight: 500;
+        color: var(--wc-text);
+      }
+
+      .inv-review-option small {
+        font-size: 0.8em;
+        font-weight: 400;
+        opacity: 0.85;
       }
 
       .inv-stats {
@@ -17272,6 +18163,75 @@ InventoryDialog.styles = [
         border-bottom: none;
       }
 
+      .inv-history-item {
+        flex-wrap: wrap;
+      }
+
+      .inv-buy-again {
+        margin-right: 4px;
+        cursor: help;
+      }
+
+      .inv-drink-notes {
+        font-size: 0.78em;
+        font-style: italic;
+        color: var(--wc-text-secondary);
+        margin-top: 3px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        white-space: pre-line;
+      }
+
+      .inv-history-editor {
+        flex-basis: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px 0 2px;
+      }
+
+      .inv-history-editor textarea {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid var(--wc-border);
+        background: transparent;
+        color: var(--wc-text);
+        font: inherit;
+        font-size: 0.85em;
+        resize: vertical;
+      }
+
+      .inv-history-editor label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85em;
+        color: var(--wc-text);
+        cursor: pointer;
+      }
+
+      .inv-history-editor .inv-editor-btns {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .inv-history-filter {
+        display: flex;
+        justify-content: flex-end;
+        padding: 8px 12px 0;
+      }
+
+      .inv-btn.active {
+        background: var(--wc-primary);
+        border-color: var(--wc-primary);
+        color: #fff;
+      }
+
       .inv-reason-badge {
         display: inline-block;
         padding: 2px 8px;
@@ -17306,6 +18266,7 @@ InventoryDialog.styles = [
         }
       }
     `,
+    touchStyles,
 ];
 __decorate([
     n$1({ type: Boolean })
@@ -17328,6 +18289,18 @@ __decorate([
 __decorate([
     n$1({ type: String })
 ], InventoryDialog.prototype, "currency", void 0);
+__decorate([
+    n$1({ type: Boolean })
+], InventoryDialog.prototype, "analyzing", void 0);
+__decorate([
+    n$1({ type: Boolean })
+], InventoryDialog.prototype, "batchVivino", void 0);
+__decorate([
+    n$1({ type: Boolean })
+], InventoryDialog.prototype, "pairingMode", void 0);
+__decorate([
+    r$1()
+], InventoryDialog.prototype, "_showPairingPicker", void 0);
 __decorate([
     r$1()
 ], InventoryDialog.prototype, "_searchQuery", void 0);
@@ -17441,6 +18414,9 @@ __decorate([
 ], InventoryDialog.prototype, "_confirmEnrichRetry", void 0);
 __decorate([
     r$1()
+], InventoryDialog.prototype, "_showReview", void 0);
+__decorate([
+    r$1()
 ], InventoryDialog.prototype, "_viewMode", void 0);
 __decorate([
     r$1()
@@ -17448,6 +18424,24 @@ __decorate([
 __decorate([
     r$1()
 ], InventoryDialog.prototype, "_historyLoading", void 0);
+__decorate([
+    r$1()
+], InventoryDialog.prototype, "_buyAgainOnly", void 0);
+__decorate([
+    r$1()
+], InventoryDialog.prototype, "_editingHistoryId", void 0);
+__decorate([
+    r$1()
+], InventoryDialog.prototype, "_editRating", void 0);
+__decorate([
+    r$1()
+], InventoryDialog.prototype, "_editNotes", void 0);
+__decorate([
+    r$1()
+], InventoryDialog.prototype, "_editBuyAgain", void 0);
+__decorate([
+    r$1()
+], InventoryDialog.prototype, "_historySaving", void 0);
 InventoryDialog = __decorate([
     t$2("inventory-dialog")
 ], InventoryDialog);
@@ -17710,7 +18704,14 @@ VivinoAiSettingsDialog.styles = [
         color: var(--wc-text-secondary);
         font-style: italic;
       }
+
+      @media (pointer: coarse) {
+        .fallback-label {
+          min-height: 44px;
+        }
+      }
     `,
+    touchStyles,
 ];
 __decorate([
     n$1({ attribute: false })
@@ -17817,6 +18818,7 @@ let WineCellarCard = class WineCellarCard extends i$1 {
         this._showVivinoAiSettings = false;
         this._showWineList = false;
         this._showInventory = false;
+        this._inventoryPairing = false;
         this._findingsCache = null;
         this._unsubscribe = null;
         this._subscribing = false;
@@ -19699,15 +20701,19 @@ let WineCellarCard = class WineCellarCard extends i$1 {
     }
     async _onRemoveWine(e) {
         try {
-            await this.hass.callWS({
-                type: "wine_cellar/remove_wine",
-                wine_id: e.detail.wine_id,
-                reason: e.detail.reason || "other",
-            });
+            const { wine_id, reason, name, personal_rating, drink_notes, buy_again } = e.detail;
+            const msg = { type: "wine_cellar/remove_wine", wine_id, reason: reason || "other" };
+            // Only the Drink button sends a tasting log.
+            if (buy_again !== undefined)
+                Object.assign(msg, { personal_rating, drink_notes, buy_again });
+            await this.hass.callWS(msg);
             await this._loadData();
+            if (reason === "drank" && name)
+                this._showToast(this._t("toast.wineDrunk", { name }));
         }
         catch (err) {
             console.error("Failed to remove wine", err);
+            this._showToast(this._t("toast.removeWineFailed"));
         }
     }
     async _onWineAdded() {
@@ -19746,30 +20752,9 @@ let WineCellarCard = class WineCellarCard extends i$1 {
             <span class="title-icon">🍷</span>
             <div class="title-text">
               <div>${title}</div>
-              <div class="title-credit">${this._t("ui.card.titleCredit")}</div>
             </div>
           </div>
           <div class="header-actions">
-            ${this._hasGemini ? b$1 `
-              <button
-                class="btn btn-primary"
-                style="font-size: 0.8em; padding: 5px 10px; background: #1565c0;"
-                @click=${this._batchAnalyzeWines}
-                title="${this._t("ui.card.fullAiAnalysisTitle")}"
-                ?disabled=${this._analyzing || this._batchVivino}
-              >
-                ${this._analyzing ? this._t("ui.card.aiScanning") : this._t("ui.card.aiBatchScanBtn")}
-              </button>
-            ` : A$1}
-            <button
-              class="btn btn-primary"
-              style="font-size: 0.8em; padding: 5px 10px; background: #8e24aa;"
-              @click=${this._batchRefreshVivino}
-              title="${this._t("ui.card.refreshVivinoTitle")}"
-              ?disabled=${this._batchVivino || this._analyzing}
-            >
-              ${this._batchVivino ? this._t("ui.card.vivinoScanning") : this._t("ui.card.vivinoBatchScanBtn")}
-            </button>
             ${this._hasVivinoAccount ? b$1 `
               <button
                 class="btn btn-primary"
@@ -19783,23 +20768,27 @@ let WineCellarCard = class WineCellarCard extends i$1 {
             : (this._vivinoSyncMode ? this._t("ui.card.vivinoSyncBtn") : this._t("ui.card.vivinoImportBtn"))}
               </button>
             ` : A$1}
-            ${this._hasGemini ? b$1 `
-              <button
-                class="btn btn-primary"
-                style="font-size: 0.8em; padding: 5px 10px; background: #00695c;"
-                @click=${() => (this._showWineList = true)}
-                title="${this._t("ui.card.scanListTitle")}"
-              >
-                ${this._t("ui.card.scanListBtn")}
-              </button>
-            ` : A$1}
             <button
               class="btn btn-primary"
               style="font-size: 0.8em; padding: 5px 10px; background: #37474f;"
-              @click=${() => (this._showInventory = true)}
+              @click=${() => {
+            this._inventoryPairing = false;
+            this._showInventory = true;
+        }}
               title="${this._t("ui.card.inventoryTitle")}"
             >
               ${this._t("ui.card.inventoryBtn")}
+            </button>
+            <button
+              class="btn btn-primary"
+              style="font-size: 0.8em; padding: 5px 10px; background: #5d4037;"
+              @click=${() => {
+            this._inventoryPairing = true;
+            this._showInventory = true;
+        }}
+              title="${this._t("ui.card.pairingsTitle")}"
+            >
+              ${this._t("ui.card.pairingsBtn")}
             </button>
             <button
               class="btn btn-primary"
@@ -20038,6 +21027,7 @@ let WineCellarCard = class WineCellarCard extends i$1 {
                     .filter((c) => c.id === this._activeTab)
                     .map((cab) => b$1 `
                           <cabinet-grid
+                            single
                             .hass=${this.hass}
                             .cabinet=${cab}
                             .wines=${this._getCabinetWines(cab.id)}
@@ -20229,6 +21219,7 @@ let WineCellarCard = class WineCellarCard extends i$1 {
                             <div class="wine-list-meta">
                               ${wine.winery}${wine.vintage ? ` · ${wine.vintage}` : ""}
                               ${wine.rating ? ` · ★${wine.rating}` : ""}
+                              ${wine.price ? b$1 ` · ${this._metadataCurrency} ${wine.price}` : A$1}
                               ${wine.disposition
                         ? b$1 ` · <span style="color: ${wine.disposition === "D" ? "#2e7d32" :
                             wine.disposition === "H" ? "#1565c0" :
@@ -20308,60 +21299,6 @@ let WineCellarCard = class WineCellarCard extends i$1 {
             </div>
           </div>
         ` : A$1}
-        ${this._showBatchVivinoConfirm ? b$1 `
-          <div class="dialog-overlay" @click=${() => (this._showBatchVivinoConfirm = false)}>
-            <div class="dialog" style="max-width:340px;padding:24px;text-align:center" @click=${(e) => e.stopPropagation()}>
-              <h3 style="margin:0 0 4px;font-size:1em;color:var(--wc-text)">${this._t("ui.card.vivinoBatchScanTitle")}</h3>
-              <p style="margin:0 0 16px;font-size:0.85em;color:var(--wc-text-secondary)">
-                ${this._t("ui.card.somePhotosQuestion")}
-              </p>
-              ${this._hasGemini ? b$1 `
-                <label style="display:flex;align-items:center;gap:6px;justify-content:center;font-size:0.8em;color:var(--wc-text-secondary);margin-bottom:16px;cursor:pointer">
-                  <input
-                    type="checkbox"
-                    .checked=${this._batchAiFallback}
-                    @change=${(e) => (this._batchAiFallback = e.target.checked)}
-                  />
-                  ${this._t("ui.card.tryAiNoMatch")}
-                </label>
-              ` : A$1}
-              <div style="display:flex;flex-direction:column;gap:8px">
-                <button class="btn btn-primary" style="background:#8e24aa" @click=${() => this._runBatchVivino("keep")}>
-                  ${this._t("ui.card.keepExistingPhotos")}
-                </button>
-                <button
-                  style="padding:8px 16px;border-radius:20px;border:1px solid var(--wc-border);background:transparent;color:var(--wc-text);cursor:pointer;font-size:0.85em"
-                  @click=${() => this._runBatchVivino("replace")}
-                >${this._t("ui.card.replaceWithVivinoPhotos")}</button>
-                <button
-                  style="margin-top:4px;padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.8em"
-                  @click=${() => (this._showBatchVivinoConfirm = false)}
-                >${this._t("ui.common.cancel")}</button>
-              </div>
-            </div>
-          </div>
-        ` : A$1}
-
-        <!-- Batch AI Analysis Confirm -->
-        ${this._showBatchAiConfirm ? b$1 `
-          <div class="dialog-overlay" @click=${() => (this._showBatchAiConfirm = false)}>
-            <div class="dialog" style="max-width:340px;padding:24px;text-align:center" @click=${(e) => e.stopPropagation()}>
-              <h3 style="margin:0 0 4px;font-size:1em;color:var(--wc-text)">${this._t("ui.card.runAiBatchTitle")}</h3>
-              <p style="margin:0 0 16px;font-size:0.85em;color:var(--wc-text-secondary)">
-                ${this._t("ui.card.runAiBatchBody", { n: this._wines.length })}
-              </p>
-              <div style="display:flex;flex-direction:column;gap:8px">
-                <button class="btn btn-primary" style="background:#1565c0" @click=${this._runBatchAnalyzeWines}>
-                  ${this._t("ui.card.runOnNWines", { n: this._wines.length })}
-                </button>
-                <button
-                  style="margin-top:4px;padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.8em"
-                  @click=${() => (this._showBatchAiConfirm = false)}
-                >${this._t("ui.common.cancel")}</button>
-              </div>
-            </div>
-          </div>
-        ` : A$1}
 
         <!-- Wine Detail Dialog -->
         <wine-detail-dialog
@@ -20416,6 +21353,7 @@ let WineCellarCard = class WineCellarCard extends i$1 {
           .enableWhisky=${this._enableWhisky}
           .defaultWineType=${this._defaultWineType}
           @close=${() => { this._showAddDialog = false; this._addToBuyListMode = false; }}
+          @scan-list=${() => (this._showWineList = true)}
           @wine-added=${this._onWineAdded}
           @buy-list-updated=${() => this._loadData()}
         ></add-wine-dialog>
@@ -20452,6 +21390,9 @@ let WineCellarCard = class WineCellarCard extends i$1 {
           .hasGemini=${this._hasGemini}
           .enableWhisky=${this._enableWhisky}
           .currency=${this._metadataCurrency}
+          .analyzing=${this._analyzing}
+          .batchVivino=${this._batchVivino}
+          .pairingMode=${this._inventoryPairing}
           @close=${() => (this._showInventory = false)}
           @wine-updated=${() => this._loadData()}
           @locate-wine=${(e) => {
@@ -20473,7 +21414,65 @@ let WineCellarCard = class WineCellarCard extends i$1 {
             this._showToast(this._t("toast.tapToMove", { name: e.detail.wine.name }));
         }}
           @remove-wine=${this._onRemoveWine}
+          @batch-ai-scan=${this._batchAnalyzeWines}
+          @batch-vivino-scan=${this._batchRefreshVivino}
         ></inventory-dialog>
+
+        <!-- Batch scan confirms: after the inventory dialog, which launches them, so they stack above it -->
+        ${this._showBatchVivinoConfirm ? b$1 `
+          <div class="dialog-overlay" @click=${() => (this._showBatchVivinoConfirm = false)}>
+            <div class="dialog" style="max-width:340px;padding:24px;text-align:center" @click=${(e) => e.stopPropagation()}>
+              <h3 style="margin:0 0 4px;font-size:1em;color:var(--wc-text)">${this._t("ui.card.vivinoBatchScanTitle")}</h3>
+              <p style="margin:0 0 16px;font-size:0.85em;color:var(--wc-text-secondary)">
+                ${this._t("ui.card.somePhotosQuestion")}
+              </p>
+              ${this._hasGemini ? b$1 `
+                <label style="display:flex;align-items:center;gap:6px;justify-content:center;font-size:0.8em;color:var(--wc-text-secondary);margin-bottom:16px;cursor:pointer">
+                  <input
+                    type="checkbox"
+                    .checked=${this._batchAiFallback}
+                    @change=${(e) => (this._batchAiFallback = e.target.checked)}
+                  />
+                  ${this._t("ui.card.tryAiNoMatch")}
+                </label>
+              ` : A$1}
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <button class="btn btn-primary" style="background:#8e24aa" @click=${() => this._runBatchVivino("keep")}>
+                  ${this._t("ui.card.keepExistingPhotos")}
+                </button>
+                <button
+                  style="padding:8px 16px;border-radius:20px;border:1px solid var(--wc-border);background:transparent;color:var(--wc-text);cursor:pointer;font-size:0.85em"
+                  @click=${() => this._runBatchVivino("replace")}
+                >${this._t("ui.card.replaceWithVivinoPhotos")}</button>
+                <button
+                  style="margin-top:4px;padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.8em"
+                  @click=${() => (this._showBatchVivinoConfirm = false)}
+                >${this._t("ui.common.cancel")}</button>
+              </div>
+            </div>
+          </div>
+        ` : A$1}
+
+        <!-- Batch AI Analysis Confirm -->
+        ${this._showBatchAiConfirm ? b$1 `
+          <div class="dialog-overlay" @click=${() => (this._showBatchAiConfirm = false)}>
+            <div class="dialog" style="max-width:340px;padding:24px;text-align:center" @click=${(e) => e.stopPropagation()}>
+              <h3 style="margin:0 0 4px;font-size:1em;color:var(--wc-text)">${this._t("ui.card.runAiBatchTitle")}</h3>
+              <p style="margin:0 0 16px;font-size:0.85em;color:var(--wc-text-secondary)">
+                ${this._t("ui.card.runAiBatchBody", { n: this._wines.length })}
+              </p>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <button class="btn btn-primary" style="background:#1565c0" @click=${this._runBatchAnalyzeWines}>
+                  ${this._t("ui.card.runOnNWines", { n: this._wines.length })}
+                </button>
+                <button
+                  style="margin-top:4px;padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.8em"
+                  @click=${() => (this._showBatchAiConfirm = false)}
+                >${this._t("ui.common.cancel")}</button>
+              </div>
+            </div>
+          </div>
+        ` : A$1}
 
         <!-- Rack Settings Dialog -->
         <rack-settings-dialog
@@ -21187,12 +22186,6 @@ WineCellarCard.styles = [
         gap: 0;
       }
 
-      .title-credit {
-        font-size: 0.45em;
-        font-weight: 400;
-        color: var(--wc-text-secondary);
-      }
-
       .header-actions {
         display: flex;
         gap: 4px;
@@ -21470,7 +22463,35 @@ WineCellarCard.styles = [
           gap: 16px;
         }
       }
+
+      /* Touch: a bottle's size is its cabinet's width divided by its column
+         count, so fewer, wider cabinets per row is what makes the cells big
+         enough to tap. Declared after the width queries above so it wins. */
+      @media (pointer: coarse) {
+        .cabinets-row {
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+          gap: 16px;
+        }
+        .stat-action {
+          display: inline-flex;
+          align-items: center;
+          min-height: 44px;
+          padding: 0 12px;
+          margin: 0;
+        }
+        .stats-bar {
+          align-items: center;
+        }
+        .header-actions {
+          gap: 8px;
+        }
+        .wine-list-item,
+        .removal-entry {
+          min-height: 52px;
+        }
+      }
     `,
+    touchStyles,
 ];
 __decorate([
     n$1({ attribute: false })
@@ -21616,6 +22637,9 @@ __decorate([
 __decorate([
     r$1()
 ], WineCellarCard.prototype, "_showInventory", void 0);
+__decorate([
+    r$1()
+], WineCellarCard.prototype, "_inventoryPairing", void 0);
 __decorate([
     r$1()
 ], WineCellarCard.prototype, "_showArrangement", void 0);

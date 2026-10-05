@@ -1,6 +1,6 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { sharedStyles } from "../styles";
+import { sharedStyles, touchStyles } from "../styles";
 import { cameraBlockedReason, describeCameraError } from "../utils/camera";
 import { t } from "../i18n";
 
@@ -140,6 +140,7 @@ export class LabelCamera extends LitElement {
         color: var(--wc-text-secondary);
       }
     `,
+    touchStyles,
   ];
 
   // Shorthand for t(key, this.hass?.language, params) — see wine-cellar-card.ts.

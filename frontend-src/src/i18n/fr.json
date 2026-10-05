@@ -33,6 +33,27 @@
     "storage": "Stockage",
     "slot": "Emplacement"
   },
+  "foodCategory": {
+    "aperitif": "Apéritif & tapas",
+    "charcuterie": "Charcuterie",
+    "cheese": "Fromages",
+    "seafood": "Fruits de mer",
+    "fish": "Poissons",
+    "duck": "Canard & foie gras",
+    "poultry": "Volaille",
+    "lamb": "Agneau",
+    "game": "Gibier",
+    "beef": "Bœuf & viandes rouges",
+    "pork": "Porc & veau",
+    "stew": "Plats mijotés & en sauce",
+    "grill": "Grillades & barbecue",
+    "spicy": "Cuisine épicée & du monde",
+    "mediterranean": "Cuisine méditerranéenne",
+    "salad": "Salades",
+    "vegetarian": "Plats végétariens",
+    "dessert": "Desserts",
+    "other": "Autres accords"
+  },
   "ui": {
     "common": {
       "cancel": "Annuler",
@@ -45,13 +66,15 @@
       "replace": "remplacer",
       "new": "nouveau{plural}",
       "colonSep": " : ",
-      "clearSearch": "Effacer la recherche"
+      "clearSearch": "Effacer la recherche",
+      "save": "Enregistrer"
     },
     "disposition": {
       "drink": "Boire",
       "drinkNow": "À boire",
       "hold": "À garder",
-      "pastPeak": "Sur le déclin"
+      "pastPeak": "Sur le déclin",
+      "past": "Déclin"
     },
     "arrangement": {
       "header": "🧹 Rangement",
@@ -110,8 +133,9 @@
       "vivinoScanning": "Analyse Vivino en cours...",
       "vivinoSyncBtn": "🔄 Synchro Vivino",
       "vivinoSyncing": "Synchro Vivino en cours...",
-      "scanListBtn": "🍽️ Scanner une liste",
       "inventoryBtn": "📦 Inventaire",
+      "pairingsBtn": "🍽️ Accords",
+      "pairingsTitle": "Trouver un vin pour accompagner votre plat",
       "addWineBtn": "+ Ajouter un vin",
       "fullAiAnalysisTitle": "Analyse IA complète sur tous les vins (disposition, notes, prix, description)",
       "refreshVivinoTitle": "Rafraîchir tous les vins depuis Vivino (notes, prix, description)",
@@ -138,7 +162,6 @@
       "syncCountConfirmBodyOne": "Vivino sera réglé sur {n} bouteille — le nombre actuel dans Cork Dork. L'ajustement apparaît dans l'historique de votre cave Vivino et peut y être annulé.",
       "syncCountConfirmBodyMany": "Vivino sera réglé sur {n} bouteilles — le nombre actuel dans Cork Dork. L'ajustement apparaît dans l'historique de votre cave Vivino et peut y être annulé.",
       "syncCountConfirmBtn": "Oui — mettre à jour Vivino",
-      "scanListTitle": "Scanner une carte des vins ou un reçu pour obtenir les notes et la valeur",
       "inventoryTitle": "Parcourir l'inventaire complet de la cave",
       "unplacedTitle": "Bouteilles non assignées, pas encore placées",
       "suggestionsTitle": "Suggestions basées sur l'emplacement actuel de vos bouteilles",
@@ -177,7 +200,6 @@
       "addBox": "Ajouter une caisse",
       "addSlot": "Ajouter un emplacement",
       "panelStored": "stockées",
-      "titleCredit": "créé à l'origine par @BaconWappedBitcoin",
       "copyBannerText": "Copie de « {name} » — touchez des cases vides ou des zones casier/caisse pour placer les copies",
       "moveBannerText": "Déplacement de « {name} » — touchez une case pour le placer",
       "buyListMoveBannerText": "Placement de « {name} » — touchez une case dans votre cave",
@@ -195,11 +217,14 @@
       "reorderRackTitle": "Toucher pour voir et réorganiser ce rack"
     },
     "inventory": {
+      "reviewBtn": "🔎 Revue d'inventaire",
+      "reviewTitle": "Revue d'inventaire",
+      "reviewIntro": "Revérifier chaque bouteille de la cave. Choisissez une source :",
       "title": "📦 Inventaire",
       "tabInventory": "Inventaire",
       "tabHistory": "Historique",
       "loadingHistory": "Chargement de l'historique...",
-      "noHistory": "Aucun historique de retrait pour le moment",
+      "noHistory": "Aucun historique — les bouteilles bues ou retirées apparaissent ici",
       "winesRemoved": "{n} vins retirés",
       "restoreBtn": "Restaurer",
       "clearHistoryBtn": "Effacer l'historique",
@@ -268,6 +293,11 @@
       "filterNotAnalyzed": "Non analysé",
       "pairsWith": "Accords avec",
       "anyFood": "Tout accord",
+      "pairingTitle": "Que mangez-vous ?",
+      "pairingIntro": "Choisissez un plat pour voir les vins qui l'accompagnent.",
+      "pairingEmpty": "Aucun vin n'a encore d'accords mets-vins. Une recherche Vivino les ajoute.",
+      "pairingBanner": "Accords avec {food}",
+      "pairingChange": "Changer",
       "missingPairingsHintOne": "{n} vin n'a pas d'accords. Seul Vivino fournit les accords — utilisez « Compléter depuis Vivino » ci-dessous.",
       "missingPairingsHintMany": "{n} vins n'ont pas d'accords. Seul Vivino fournit les accords — utilisez « Compléter depuis Vivino » ci-dessous.",
       "country": "Pays",
@@ -358,7 +388,18 @@
       "racksWord": "racks",
       "buyListItemsWord": "éléments de liste d'achat",
       "createdLabel": "Créée le : {date}",
-      "restoreNowBtn": "Restaurer maintenant"
+      "restoreNowBtn": "Restaurer maintenant",
+      "buyAgainOnly": "🛒 À racheter uniquement",
+      "noBuyAgain": "Aucun vin marqué « à racheter » pour le moment",
+      "buyAgainTitle": "À racheter — dans votre liste d'achat",
+      "addNotesBtn": "📝 Ajouter des notes",
+      "editNotesBtn": "📝 Notes",
+      "myRatingLabel": "Ma note",
+      "drinkNotesPlaceholder": "Comment était-il ? Avec quoi l'avez-vous accompagné ?",
+      "buyAgainLabel": "À racheter ?",
+      "buyAgainHint": "L'ajoute à votre liste d'achat",
+      "historySaved": "Enregistré",
+      "historySaveFailed": "Échec de l'enregistrement"
     },
     "addWine": {
       "title": "Ajouter un vin",
@@ -377,6 +418,8 @@
       "configureGeminiTitle": "Configurez la clé API Gemini dans les paramètres de l'intégration",
       "takePhotoOfLabel": "Prenez une photo de l'étiquette du vin",
       "requiresGeminiKey": "Nécessite une clé API Gemini dans les paramètres",
+      "scanListTitle": "Scanner une liste",
+      "scanListDesc": "Photo d'une carte des vins ou d'un reçu — notes et valeur",
       "orEnterManually": "ou entrez manuellement",
       "barcodePlaceholder": "Entrez le code-barres...",
       "lookUpBtn": "Rechercher",
@@ -470,7 +513,13 @@
       "ratingsCountSuffix": " ({count} avis)",
       "myRating": "Ma note",
       "aiScanBtn": "Analyse IA",
-      "scanLabelBtn": "Scanner l'étiquette",
+      "scanLabelBtn": "Étiquette",
+      "lookupBtn": "Vivino / IA",
+      "lookupTitle": "Mettre à jour les détails de cette bouteille via Vivino ou l'IA",
+      "lookupChooserTitle": "Mettre à jour les détails",
+      "lookupChooserIntro": "Choisissez une source :",
+      "lookupVivinoDesc": "Notes, description, cépages et accords mets-vins depuis Vivino",
+      "lookupAiDesc": "Analyse IA complète : disposition, notes, prix, description",
       "scanLabelTitle": "Prendre une nouvelle photo de l'étiquette pour mettre à jour la photo et les détails de cette bouteille",
       "resetAiContentBtn": "Réinitialiser",
       "resetAiContentTitle": "Effacer la description et les accords mets-vins pour que la prochaine recherche Vivino/IA les régénère entièrement (corrige un texte resté dans la mauvaise langue)",
@@ -548,7 +597,14 @@
       "chamberingReady": "🌡️ Prêt à servir",
       "chamberingWarmUp": "🌡️ Sortir {duration} avant de servir",
       "chamberingChill": "🧊 Rafraîchir ~15–20 min avant de servir",
-      "aiLabel": "IA"
+      "aiLabel": "IA",
+      "drinkBtn": "Boire",
+      "drinkTitle": "🍷 Santé !",
+      "drinkIntro": "Notez vos impressions — ou passez et ajoutez-les plus tard depuis l'Historique.",
+      "drinkNotesPlaceholder": "Comment était-il ? Avec quoi l'avez-vous accompagné ?",
+      "buyAgainLabel": "À racheter ?",
+      "buyAgainHint": "L'ajoute à votre liste d'achat",
+      "drinkConfirmBtn": "Boire"
     },
     "rack": {
       "failedToAddRack": "Échec de l'ajout du rack.",
@@ -761,6 +817,8 @@
     "tapToPlace": "Touchez une case pour placer « {name} »",
     "movedToCellar": "« {name} » déplacé vers la cave",
     "moveToCellarFailed": "Échec du déplacement vers la cave",
-    "tapToMove": "Touchez une case pour déplacer « {name} »"
+    "tapToMove": "Touchez une case pour déplacer « {name} »",
+    "wineDrunk": "Santé ! {name} est maintenant dans l'Historique",
+    "removeWineFailed": "Échec du retrait du vin"
   }
 }

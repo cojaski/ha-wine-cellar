@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Wine, Cabinet, TastingNotes, getWineTypeLabels, getSelectableWineTypes, WINE_TYPE_COLORS, WineType, getRemovalReasons, getWineLocation, producerLabel, varietyLabel } from "../models";
-import { sharedStyles } from "../styles";
+import { sharedStyles, touchStyles } from "../styles";
 import { resizeImageForStorage } from "../utils/image";
 import { t } from "../i18n";
 import { getChamberingAdvice, formatDuration } from "../utils/chambering";
@@ -34,10 +34,15 @@ export class WineDetailDialog extends LitElement {
   @state() private _saving = false;
   @state() private _refreshing = false;
   @state() private _analyzing = false;
+  @state() private _showLookupChooser = false;
   @state() private _resettingAiContent = false;
   @state() private _scanningLabel = false;
   @state() private _showLabelCamera = false;
   @state() private _showRemoveConfirm = false;
+  @state() private _showDrinkDialog = false;
+  @state() private _drinkRating = 0;
+  @state() private _drinkNotes = "";
+  @state() private _drinkBuyAgain = false;
   @state() private _pendingVivinoImage: string | null = null;
   @state() private _showPhotoCamera = false;
   @state() private _photoBusy = false;
@@ -527,6 +532,72 @@ export class WineDetailDialog extends LitElement {
         white-space: nowrap;
       }
 
+      /* Bottle actions: a big Drink button on its own, then two cards —
+         look-up (Vivino/AI, label photo) and manage (copy/move/unassign/
+         remove) — so the everyday action isn't lost among the rest. */
+      .actions.grouped {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+
+      .action-cards {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .action-card {
+        flex: 1 1 auto;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+        padding: 8px;
+        border: 1px solid var(--wc-border);
+        border-radius: 12px;
+        background: var(--wc-hover);
+      }
+
+      .actions .btn.drink-btn {
+        font-size: 1.05em;
+        font-weight: 600;
+        padding: 12px 16px;
+        border-radius: 12px;
+      }
+
+      .lookup-options {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .lookup-option {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 14px;
+        color: #fff;
+        cursor: pointer;
+        text-align: left;
+        font-size: 0.9em;
+        font-weight: 500;
+      }
+
+      .lookup-option small {
+        font-size: 0.8em;
+        font-weight: 400;
+        opacity: 0.85;
+      }
+
+      .lookup-option:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+
       /* Edit form styles */
       .edit-form {
         padding: 0 20px 16px;
@@ -597,7 +668,29 @@ export class WineDetailDialog extends LitElement {
           grid-template-columns: 1fr;
         }
       }
+
+      /* Touch: the photo dots stay small visually but get a finger-sized
+         invisible hit area; the location link gets a full-height row. */
+      @media (pointer: coarse) {
+        .photo-dots {
+          gap: 16px;
+        }
+        .photo-dot {
+          position: relative;
+          width: 10px;
+          height: 10px;
+        }
+        .photo-dot::after {
+          content: "";
+          position: absolute;
+          inset: -14px;
+        }
+        .wine-location {
+          min-height: 44px;
+        }
+      }
     `,
+    touchStyles,
   ];
 
   // Shorthand for t(key, this.hass?.language, params) — see wine-cellar-card.ts.
@@ -767,6 +860,34 @@ export class WineDetailDialog extends LitElement {
       // Show reason prompt for cellar wines
       this._showRemoveConfirm = true;
     }
+  }
+
+  private _onDrink() {
+    if (!this.wine) return;
+    this._drinkRating = this.wine.user_rating ?? 0;
+    this._drinkNotes = "";
+    this._drinkBuyAgain = false;
+    this._showDrinkDialog = true;
+  }
+
+  private _confirmDrink() {
+    if (!this.wine) return;
+    this.dispatchEvent(
+      new CustomEvent("remove-wine", {
+        detail: {
+          wine_id: this.wine.id,
+          reason: "drank",
+          name: this.wine.name,
+          personal_rating: this._drinkRating || null,
+          drink_notes: this._drinkNotes.trim(),
+          buy_again: this._drinkBuyAgain,
+        },
+        bubbles: true,
+        composed: true,
+      })
+    );
+    this._showDrinkDialog = false;
+    this._close();
   }
 
   private _confirmRemove(reason: string) {
@@ -964,6 +1085,24 @@ export class WineDetailDialog extends LitElement {
       console.error("Vivino refresh failed", err);
     }
     this._refreshing = false;
+  }
+
+  // One "Vivino / AI" button: without an AI provider there's nothing to
+  // choose, so it goes straight to Vivino; otherwise it opens the same
+  // source chooser as the inventory review.
+  private _onLookup() {
+    if (!this.hasGemini) {
+      this._refreshFromVivino();
+      return;
+    }
+    this._showLookupChooser = true;
+  }
+
+  private _pickLookup(kind: "vivino" | "ai" | "reset") {
+    this._showLookupChooser = false;
+    if (kind === "vivino") this._refreshFromVivino();
+    else if (kind === "ai") this._analyzeWithAI();
+    else this._resetAiContent();
   }
 
   private async _confirmAiFallback(remember: boolean) {
@@ -1443,38 +1582,40 @@ export class WineDetailDialog extends LitElement {
 
           ${!this._editingFields && (this.mode === "cellar" || this.mode === "buylist")
             ? html`
-                <div class="actions">
-                  <button class="btn btn-primary" style="background:#8e24aa"
-                    ?disabled=${this._refreshing} @click=${this._refreshFromVivino}>
-                    ${this._refreshing ? "..." : "🍇 Vivino"}
-                  </button>
-                  ${this.hasGemini
-                    ? html`<button class="btn btn-primary" style="background:#1565c0"
-                        ?disabled=${this._analyzing} @click=${this._analyzeWithAI}>
-                        ${this._analyzing ? "..." : `🤖 ${this._t("ui.wineDetail.aiScanBtn")}`}
-                      </button>
-                      <button class="btn btn-primary" style="background:#2e7d32"
-                        ?disabled=${this._scanningLabel} @click=${() => (this._showLabelCamera = true)}
-                        title="${this._t('ui.wineDetail.scanLabelTitle')}">
-                        ${this._scanningLabel ? "..." : `📷 ${this._t("ui.wineDetail.scanLabelBtn")}`}
-                      </button>
-                      <button class="btn btn-primary" style="background:#78909c"
-                        ?disabled=${this._resettingAiContent} @click=${this._resetAiContent}
-                        title="${this._t('ui.wineDetail.resetAiContentTitle')}">
-                        ${this._resettingAiContent ? "..." : `♻️ ${this._t("ui.wineDetail.resetAiContentBtn")}`}
-                      </button>`
-                    : nothing}
+                <div class="actions grouped">
                   ${this.mode === "cellar"
-                    ? html`
-                        <button class="btn btn-primary" style="background:#546e7a" @click=${this._onCopy}>📋 ${this._t("ui.wineDetail.copyBtn")}</button>
-                        <button class="btn btn-primary" style="background:#6d4c41" @click=${this._onMove}>↔ ${this._t("ui.wineDetail.moveBtn")}</button>
-                        ${wine.cabinet_id
-                          ? html`<button class="btn btn-primary" style="background:#ef6c00" @click=${this._moveToUnassigned}>📦 ${this._t("ui.wineDetail.unassignBtn")}</button>`
-                          : nothing}
-                      `
+                    ? html`<button class="btn btn-primary drink-btn" style="background:#722F37"
+                        @click=${this._onDrink}>🍷 ${this._t("ui.wineDetail.drinkBtn")}</button>`
                     : nothing}
-                  <button class="btn btn-primary" style="background:#c62828"
-                    @click=${this._onRemove}>✕ ${this._t("ui.wineDetail.removeBtn")}</button>
+                  <div class="action-cards">
+                    <div class="action-card">
+                      <button class="btn btn-primary" style="background:#8e24aa"
+                        ?disabled=${this._refreshing || this._analyzing} @click=${this._onLookup}
+                        title="${this._t('ui.wineDetail.lookupTitle')}">
+                        ${this._refreshing || this._analyzing ? "..." : `🔎 ${this._t("ui.wineDetail.lookupBtn")}`}
+                      </button>
+                      ${this.hasGemini
+                        ? html`<button class="btn btn-primary" style="background:#2e7d32"
+                            ?disabled=${this._scanningLabel} @click=${() => (this._showLabelCamera = true)}
+                            title="${this._t('ui.wineDetail.scanLabelTitle')}">
+                            ${this._scanningLabel ? "..." : `📷 ${this._t("ui.wineDetail.scanLabelBtn")}`}
+                          </button>`
+                        : nothing}
+                    </div>
+                    <div class="action-card">
+                      ${this.mode === "cellar"
+                        ? html`
+                            <button class="btn btn-primary" style="background:#546e7a" @click=${this._onCopy}>📋 ${this._t("ui.wineDetail.copyBtn")}</button>
+                            <button class="btn btn-primary" style="background:#6d4c41" @click=${this._onMove}>↔ ${this._t("ui.wineDetail.moveBtn")}</button>
+                            ${wine.cabinet_id
+                              ? html`<button class="btn btn-primary" style="background:#ef6c00" @click=${this._moveToUnassigned}>📦 ${this._t("ui.wineDetail.unassignBtn")}</button>`
+                              : nothing}
+                          `
+                        : nothing}
+                      <button class="btn btn-primary" style="background:#c62828"
+                        @click=${this._onRemove}>✕ ${this._t("ui.wineDetail.removeBtn")}</button>
+                    </div>
+                  </div>
                 </div>
                 ${wine.vivino_checked_at || wine.ai_checked_at || wine.vivino_updated_at || wine.ai_updated_at
                   ? html`
@@ -1707,6 +1848,40 @@ export class WineDetailDialog extends LitElement {
               </div>
             </div>
           ` : nothing}
+          ${this._showDrinkDialog ? html`
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10;border-radius:16px">
+              <div style="background:var(--wc-bg);border-radius:12px;padding:24px;max-width:340px;width:90%;text-align:center" @click=${(e: Event) => e.stopPropagation()}>
+                <h3 style="margin:0 0 4px;font-size:1em;color:var(--wc-text)">${this._t("ui.wineDetail.drinkTitle")}</h3>
+                <p style="margin:0 0 12px;font-size:0.85em;color:var(--wc-text-secondary)">${this._t("ui.wineDetail.drinkIntro")}</p>
+                <div style="margin-bottom:10px">
+                  <star-rating
+                    .value=${this._drinkRating}
+                    @rating-change=${(e: CustomEvent) => (this._drinkRating = e.detail.value)}
+                  ></star-rating>
+                </div>
+                <textarea
+                  rows="3"
+                  style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--wc-border);background:var(--wc-surface, transparent);color:var(--wc-text);font:inherit;font-size:0.85em;resize:vertical"
+                  placeholder="${this._t("ui.wineDetail.drinkNotesPlaceholder")}"
+                  .value=${this._drinkNotes}
+                  @input=${(e: Event) => (this._drinkNotes = (e.target as HTMLTextAreaElement).value)}
+                ></textarea>
+                <label style="display:flex;align-items:center;gap:8px;margin:10px 0 16px;font-size:0.9em;color:var(--wc-text);cursor:pointer;text-align:left">
+                  <input type="checkbox" .checked=${this._drinkBuyAgain}
+                    @change=${(e: Event) => (this._drinkBuyAgain = (e.target as HTMLInputElement).checked)} />
+                  <span>🛒 ${this._t("ui.wineDetail.buyAgainLabel")}
+                    <small style="display:block;color:var(--wc-text-secondary)">${this._t("ui.wineDetail.buyAgainHint")}</small></span>
+                </label>
+                <div style="display:flex;gap:8px;justify-content:center">
+                  <button class="btn btn-primary" style="background:#722F37" @click=${this._confirmDrink}>🍷 ${this._t("ui.wineDetail.drinkConfirmBtn")}</button>
+                  <button
+                    style="padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.8em"
+                    @click=${() => (this._showDrinkDialog = false)}
+                  >${this._t("ui.common.cancel")}</button>
+                </div>
+              </div>
+            </div>
+          ` : nothing}
           ${this._pendingVivinoImage ? html`
             <div style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10;border-radius:16px">
               <div style="background:var(--wc-bg);border-radius:12px;padding:24px;max-width:320px;width:90%;text-align:center" @click=${(e: Event) => e.stopPropagation()}>
@@ -1759,6 +1934,36 @@ export class WineDetailDialog extends LitElement {
                   <button
                     style="padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.85em"
                     @click=${() => (this._showLabelCamera = false)}
+                  >${this._t("ui.common.cancel")}</button>
+                </div>
+              </div>
+            </div>
+          ` : nothing}
+          ${this._showLookupChooser ? html`
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10;border-radius:16px"
+              @click=${() => (this._showLookupChooser = false)}>
+              <div style="background:var(--wc-bg);border-radius:12px;padding:20px;max-width:320px;width:90%" @click=${(e: Event) => e.stopPropagation()}>
+                <h3 style="margin:0 0 4px;font-size:1em;color:var(--wc-text)">${this._t("ui.wineDetail.lookupChooserTitle")}</h3>
+                <p style="margin:0 0 12px;font-size:0.85em;color:var(--wc-text-secondary)">${this._t("ui.wineDetail.lookupChooserIntro")}</p>
+                <div class="lookup-options">
+                  <button class="lookup-option" style="background:#8e24aa" @click=${() => this._pickLookup("vivino")}>
+                    <span>🍇 Vivino</span>
+                    <small>${this._t("ui.wineDetail.lookupVivinoDesc")}</small>
+                  </button>
+                  <button class="lookup-option" style="background:#1565c0" @click=${() => this._pickLookup("ai")}>
+                    <span>🤖 ${this._t("ui.wineDetail.aiScanBtn")}</span>
+                    <small>${this._t("ui.wineDetail.lookupAiDesc")}</small>
+                  </button>
+                  <button class="lookup-option" style="background:#78909c"
+                    ?disabled=${this._resettingAiContent} @click=${() => this._pickLookup("reset")}>
+                    <span>♻️ ${this._t("ui.wineDetail.resetAiContentBtn")}</span>
+                    <small>${this._t("ui.wineDetail.resetAiContentTitle")}</small>
+                  </button>
+                </div>
+                <div style="text-align:center">
+                  <button
+                    style="padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.8em"
+                    @click=${() => (this._showLookupChooser = false)}
                   >${this._t("ui.common.cancel")}</button>
                 </div>
               </div>

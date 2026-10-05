@@ -2,7 +2,8 @@ import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Wine, Cabinet, WineType, WINE_TYPE_COLORS, WINE_TYPE_LABELS, getWineTypeLabels, WineHistoryItem, getWineLocation, getRemovalReasons } from "../models";
 import { t } from "../i18n";
-import { sharedStyles } from "../styles";
+import { sharedStyles, touchStyles } from "../styles";
+import "./star-rating";
 import {
   matchesQuery,
   normalizeText,
@@ -11,7 +12,30 @@ import {
   splitMulti,
   collectFacet,
 } from "../utils/search";
-import { categorizeFoodPairing } from "../utils/foodCategories";
+import { categorizeFoodPairing, FOOD_CATEGORY_IDS } from "../utils/foodCategories";
+
+// One icon per food category, for the Pairings chooser.
+const FOOD_ICONS: Record<string, string> = {
+  aperitif: "🫒",
+  charcuterie: "🥓",
+  cheese: "🧀",
+  seafood: "🦪",
+  fish: "🐟",
+  duck: "🦆",
+  poultry: "🍗",
+  lamb: "🐑",
+  game: "🦌",
+  beef: "🥩",
+  pork: "🐖",
+  stew: "🍲",
+  grill: "🔥",
+  spicy: "🌶️",
+  mediterranean: "🍅",
+  salad: "🥗",
+  vegetarian: "🥦",
+  dessert: "🍰",
+  other: "🍽️",
+};
 import "./wine-detail-dialog";
 
 type SortField =
@@ -58,6 +82,14 @@ export class InventoryDialog extends LitElement {
   @property({ type: Boolean }) hasGemini = false;
   @property({ type: Boolean }) enableWhisky = false;
   @property({ type: String }) currency = "USD";
+  // Batch AI / Vivino scans run in the card (they outlive this dialog); these
+  // only mirror their progress so the review button can show it.
+  @property({ type: Boolean }) analyzing = false;
+  @property({ type: Boolean }) batchVivino = false;
+  // Opened from the card's "Pairings" button: start on the food chooser,
+  // then show the inventory filtered to what goes with the pick.
+  @property({ type: Boolean }) pairingMode = false;
+  @state() private _showPairingPicker = false;
 
   @state() private _searchQuery = "";
   @state() private _typeFilter = DEFAULT_FILTERS.typeFilter;
@@ -96,9 +128,16 @@ export class InventoryDialog extends LitElement {
   @state() private _enriching: "" | "vivino" | "ai" = "";
   @state() private _confirmEnrich: "" | "vivino" | "ai" = "";
   @state() private _confirmEnrichRetry = false;
+  @state() private _showReview = false;
   @state() private _viewMode: "inventory" | "history" = "inventory";
   @state() private _historyItems: WineHistoryItem[] = [];
   @state() private _historyLoading = false;
+  @state() private _buyAgainOnly = false;
+  @state() private _editingHistoryId = "";
+  @state() private _editRating = 0;
+  @state() private _editNotes = "";
+  @state() private _editBuyAgain = false;
+  @state() private _historySaving = false;
 
   // HA websocket errors can arrive as a plain string, an Error, or a
   // {code, message} object depending on where they're thrown from — a bare
@@ -157,6 +196,119 @@ export class InventoryDialog extends LitElement {
 
       .inv-close:hover {
         background: var(--wc-hover);
+      }
+
+      .inv-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .inv-review-btn {
+        background: #37474f;
+        color: #fff;
+        border: none;
+        border-radius: 16px;
+        padding: 5px 12px;
+        font-size: 0.8em;
+        cursor: pointer;
+      }
+
+      .inv-review-btn:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+
+      .inv-review-options {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .inv-review-option {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 14px;
+        color: #fff;
+        cursor: pointer;
+        text-align: left;
+        font-size: 0.9em;
+        font-weight: 500;
+      }
+
+      .inv-pairing-box {
+        max-width: 520px;
+        max-height: 85%;
+        overflow-y: auto;
+      }
+
+      .inv-pairing-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .inv-pairing-option {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        padding: 10px 6px;
+        border: 1px solid var(--wc-border);
+        border-radius: 10px;
+        background: var(--wc-hover);
+        color: var(--wc-text);
+        cursor: pointer;
+        font-size: 0.8em;
+      }
+
+      .inv-pairing-option:hover {
+        border-color: var(--wc-accent, #722f37);
+      }
+
+      .inv-pairing-icon {
+        font-size: 1.8em;
+        line-height: 1.2;
+      }
+
+      .inv-pairing-label {
+        font-weight: 500;
+        text-align: center;
+      }
+
+      .inv-pairing-option small {
+        color: var(--wc-text-secondary);
+      }
+
+      .inv-pairing-missing {
+        display: block;
+        margin-bottom: 12px;
+        color: var(--wc-text-secondary);
+      }
+
+      .inv-pairing-banner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin: 0 16px 8px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        background: var(--wc-hover);
+        font-size: 0.9em;
+        font-weight: 500;
+        color: var(--wc-text);
+      }
+
+      .inv-review-option small {
+        font-size: 0.8em;
+        font-weight: 400;
+        opacity: 0.85;
       }
 
       .inv-stats {
@@ -761,6 +913,75 @@ export class InventoryDialog extends LitElement {
         border-bottom: none;
       }
 
+      .inv-history-item {
+        flex-wrap: wrap;
+      }
+
+      .inv-buy-again {
+        margin-right: 4px;
+        cursor: help;
+      }
+
+      .inv-drink-notes {
+        font-size: 0.78em;
+        font-style: italic;
+        color: var(--wc-text-secondary);
+        margin-top: 3px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        white-space: pre-line;
+      }
+
+      .inv-history-editor {
+        flex-basis: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px 0 2px;
+      }
+
+      .inv-history-editor textarea {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid var(--wc-border);
+        background: transparent;
+        color: var(--wc-text);
+        font: inherit;
+        font-size: 0.85em;
+        resize: vertical;
+      }
+
+      .inv-history-editor label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85em;
+        color: var(--wc-text);
+        cursor: pointer;
+      }
+
+      .inv-history-editor .inv-editor-btns {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .inv-history-filter {
+        display: flex;
+        justify-content: flex-end;
+        padding: 8px 12px 0;
+      }
+
+      .inv-btn.active {
+        background: var(--wc-primary);
+        border-color: var(--wc-primary);
+        color: #fff;
+      }
+
       .inv-reason-badge {
         display: inline-block;
         padding: 2px 8px;
@@ -795,6 +1016,7 @@ export class InventoryDialog extends LitElement {
         }
       }
     `,
+    touchStyles,
   ];
 
   updated(changedProps: Map<string, unknown>) {
@@ -815,6 +1037,9 @@ export class InventoryDialog extends LitElement {
       this._restoreData = null;
       this._viewMode = "inventory";
       this._historyItems = [];
+      this._buyAgainOnly = false;
+      this._editingHistoryId = "";
+      this._showPairingPicker = this.pairingMode;
     }
   }
 
@@ -841,7 +1066,11 @@ export class InventoryDialog extends LitElement {
       if (p.dispositionFilter) this._dispositionFilter = p.dispositionFilter;
       if (p.countryFilter) this._countryFilter = p.countryFilter;
       if (p.grapeFilter) this._grapeFilter = p.grapeFilter;
-      if (p.foodFilter) this._foodFilter = p.foodFilter;
+      // Older builds saved the French category label itself; only a known
+      // category id is a valid filter now.
+      if (p.foodFilter && (p.foodFilter === "all" || FOOD_CATEGORY_IDS.includes(p.foodFilter))) {
+        this._foodFilter = p.foodFilter;
+      }
       if (p.cabinetFilter) this._cabinetFilter = p.cabinetFilter;
       if (typeof p.minRating === "number") this._minRating = p.minRating;
       if (p.maxPrice !== undefined) this._maxPrice = p.maxPrice;
@@ -928,8 +1157,66 @@ export class InventoryDialog extends LitElement {
   // balloon this dropdown into dozens of near-synonyms. Each split pairing
   // is mapped to a generic category (see foodCategories.ts) so the filter
   // stays short — the wine detail view still shows the original AI text.
+  // Options are category ids, sorted by their translated label.
   private _foodOptions(): string[] {
-    return collectFacet(this.wines, (w) => splitMulti(w.food_pairings).map(categorizeFoodPairing));
+    return collectFacet(this.wines, (w) => splitMulti(w.food_pairings).map(categorizeFoodPairing)).sort(
+      (a, b) => this._foodLabel(a).localeCompare(this._foodLabel(b))
+    );
+  }
+
+  private _foodLabel(id: string): string {
+    return this._t(`foodCategory.${id}`);
+  }
+
+  // Picking a food clears every other filter first: a leftover saved type
+  // or rating filter would otherwise hide wines that pair, with nothing on
+  // screen saying why.
+  private _pickPairing(id: string) {
+    this._clearFilters();
+    this._foodFilter = id;
+    this._savePrefs();
+    this._showPairingPicker = false;
+  }
+
+  private _renderPairingPicker() {
+    if (!this._showPairingPicker) return nothing;
+    const counts = new Map<string, number>();
+    for (const w of this.wines) {
+      for (const id of new Set(splitMulti(w.food_pairings).map(categorizeFoodPairing))) {
+        counts.set(id, (counts.get(id) ?? 0) + 1);
+      }
+    }
+    const options = this._foodOptions();
+    const missing = this._winesWithoutPairings();
+    return html`
+      <div class="inv-confirm-overlay" @click=${() => (this._showPairingPicker = false)}>
+        <div class="inv-confirm-box inv-pairing-box" @click=${(e: Event) => e.stopPropagation()}>
+          <h3>${this._t("ui.inventory.pairingTitle")}</h3>
+          <p>${options.length ? this._t("ui.inventory.pairingIntro") : this._t("ui.inventory.pairingEmpty")}</p>
+          <div class="inv-pairing-grid">
+            ${options.map(
+              (id) => html`
+                <button class="inv-pairing-option" @click=${() => this._pickPairing(id)}>
+                  <span class="inv-pairing-icon">${FOOD_ICONS[id] ?? "🍽️"}</span>
+                  <span class="inv-pairing-label">${this._foodLabel(id)}</span>
+                  <small>${counts.get(id) ?? 0}</small>
+                </button>
+              `
+            )}
+          </div>
+          ${missing
+            ? html`<small class="inv-pairing-missing">${missing > 1
+                ? this._t("ui.inventory.missingPairingsHintMany", { n: missing })
+                : this._t("ui.inventory.missingPairingsHintOne", { n: missing })}</small>`
+            : nothing}
+          <div class="inv-confirm-btns">
+            <button class="inv-confirm-cancel" @click=${() => (this._showPairingPicker = false)}>
+              ${this._t("ui.common.cancel")}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   private _winesWithoutPairings(): number {
@@ -1222,6 +1509,71 @@ export class InventoryDialog extends LitElement {
     }
   }
 
+  private _startEditHistory(item: WineHistoryItem) {
+    if (this._editingHistoryId === item.id) {
+      this._editingHistoryId = "";
+      return;
+    }
+    this._editingHistoryId = item.id;
+    this._editRating = item.personal_rating ?? 0;
+    this._editNotes = item.drink_notes || "";
+    this._editBuyAgain = !!item.buy_again;
+  }
+
+  private async _saveHistoryEntry(historyId: string) {
+    this._historySaving = true;
+    try {
+      const result = await this.hass.callWS({
+        type: "wine_cellar/update_history_entry",
+        history_id: historyId,
+        personal_rating: this._editRating || null,
+        drink_notes: this._editNotes.trim(),
+        buy_again: this._editBuyAgain,
+      });
+      this._historyItems = this._historyItems.map((i) => (i.id === historyId ? result.entry : i));
+      this._editingHistoryId = "";
+      this._statusMsg = this._t("ui.inventory.historySaved");
+      // Buy again changes the Buy List the card shows.
+      this.dispatchEvent(new CustomEvent("wine-updated", { bubbles: true, composed: true }));
+    } catch (err) {
+      console.error("Failed to save history entry", err);
+      this._statusMsg = this._t("ui.inventory.historySaveFailed");
+    }
+    this._historySaving = false;
+  }
+
+  private _renderHistoryEditor(item: WineHistoryItem) {
+    return html`
+      <div class="inv-history-editor">
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85em;color:var(--wc-text-secondary)">
+          ${this._t("ui.inventory.myRatingLabel")}
+          <star-rating
+            .value=${this._editRating}
+            .size=${22}
+            @rating-change=${(e: CustomEvent) => (this._editRating = e.detail.value)}
+          ></star-rating>
+        </div>
+        <textarea
+          rows="3"
+          placeholder="${this._t("ui.inventory.drinkNotesPlaceholder")}"
+          .value=${this._editNotes}
+          @input=${(e: Event) => (this._editNotes = (e.target as HTMLTextAreaElement).value)}
+        ></textarea>
+        <label>
+          <input type="checkbox" .checked=${this._editBuyAgain}
+            @change=${(e: Event) => (this._editBuyAgain = (e.target as HTMLInputElement).checked)} />
+          <span>🛒 ${this._t("ui.inventory.buyAgainLabel")}
+            <small style="color:var(--wc-text-secondary)"> — ${this._t("ui.inventory.buyAgainHint")}</small></span>
+        </label>
+        <div class="inv-editor-btns">
+          <button class="inv-btn" @click=${() => (this._editingHistoryId = "")}>${this._t("ui.common.cancel")}</button>
+          <button class="inv-btn active" ?disabled=${this._historySaving}
+            @click=${() => this._saveHistoryEntry(item.id)}>${this._t("ui.common.save")}</button>
+        </div>
+      </div>
+    `;
+  }
+
   private _formatReason(reason: string): string {
     const labels = getRemovalReasons(this.hass?.language);
     return labels.find((r) => r.id === reason)?.label || reason;
@@ -1247,26 +1599,52 @@ export class InventoryDialog extends LitElement {
         </div>
       `;
     }
+    const buyAgainCount = this._historyItems.filter((i) => i.buy_again).length;
+    const items = this._buyAgainOnly ? this._historyItems.filter((i) => i.buy_again) : this._historyItems;
     return html`
       ${this._renderStorageInfo()}
+      <div class="inv-history-filter">
+        <button class="inv-btn ${this._buyAgainOnly ? "active" : ""}"
+          @click=${() => (this._buyAgainOnly = !this._buyAgainOnly)}
+        >${this._t("ui.inventory.buyAgainOnly")} (${buyAgainCount})</button>
+      </div>
       <div class="inv-list">
-        ${this._historyItems.map(item => html`
+        ${items.length === 0
+          ? html`<div class="inv-empty">${this._t("ui.inventory.noBuyAgain")}</div>`
+          : nothing}
+        ${items.map(item => html`
           <div class="inv-history-item">
             ${item.image_url
               ? html`<img class="inv-thumb" src="${item.image_url}" alt="" loading="lazy" />`
               : html`<div class="inv-dot" style="background:${WINE_TYPE_COLORS[item.type as WineType] || "#999"}"></div>`}
             <div class="inv-info">
-              <div class="inv-name">${item.name}</div>
+              <div class="inv-name">
+                ${item.buy_again
+                  ? html`<span class="inv-buy-again" title="${this._t("ui.inventory.buyAgainTitle")}">🛒</span>`
+                  : nothing}${item.name}
+              </div>
               <div class="inv-meta">
                 ${item.winery}${item.vintage ? ` · ${item.vintage}` : ""}
                 · <span class="inv-reason-badge">${this._formatReason(item.reason)}</span>
               </div>
+              ${item.personal_rating
+                ? html`<star-rating .value=${item.personal_rating} .size=${14} readonly></star-rating>`
+                : nothing}
+              ${item.drink_notes ? html`<div class="inv-drink-notes">${item.drink_notes}</div>` : nothing}
             </div>
             <div class="inv-right">
               ${item.price ? html`<div class="inv-price">${this.currency} ${item.price.toFixed(0)}</div>` : nothing}
               <div class="inv-location">${this._formatDate(item.removed_at)}</div>
-              <button class="inv-btn" style="margin-top:4px" @click=${() => this._restoreFromHistory(item.id)}>${this._t("ui.inventory.restoreBtn")}</button>
+              <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px;align-items:flex-end">
+                <button class="inv-btn" @click=${() => this._startEditHistory(item)}>
+                  ${item.drink_notes || item.personal_rating
+                    ? this._t("ui.inventory.editNotesBtn")
+                    : this._t("ui.inventory.addNotesBtn")}
+                </button>
+                <button class="inv-btn" @click=${() => this._restoreFromHistory(item.id)}>${this._t("ui.inventory.restoreBtn")}</button>
+              </div>
             </div>
+            ${this._editingHistoryId === item.id ? this._renderHistoryEditor(item) : nothing}
           </div>
         `)}
       </div>
@@ -1351,6 +1729,40 @@ export class InventoryDialog extends LitElement {
           html`<strong>${missAI.length}</strong> ${this._t("ui.inventory.enrichRetryAI")}`,
           this._t("ui.inventory.retryAI")
         )}
+      </div>
+    `;
+  }
+
+  private _startReview(kind: "ai" | "vivino") {
+    this._showReview = false;
+    this.dispatchEvent(new CustomEvent(kind === "ai" ? "batch-ai-scan" : "batch-vivino-scan"));
+  }
+
+  private _renderReviewChooser() {
+    if (!this._showReview) return nothing;
+    return html`
+      <div class="inv-confirm-overlay" @click=${() => (this._showReview = false)}>
+        <div class="inv-confirm-box" @click=${(e: Event) => e.stopPropagation()}>
+          <h3>${this._t("ui.inventory.reviewTitle")}</h3>
+          <p>${this._t("ui.inventory.reviewIntro")}</p>
+          <div class="inv-review-options">
+            ${this.hasGemini ? html`
+              <button class="inv-review-option" style="background:#1565c0" @click=${() => this._startReview("ai")}>
+                <span>${this._t("ui.card.aiBatchScanBtn")}</span>
+                <small>${this._t("ui.card.fullAiAnalysisTitle")}</small>
+              </button>
+            ` : nothing}
+            <button class="inv-review-option" style="background:#8e24aa" @click=${() => this._startReview("vivino")}>
+              <span>${this._t("ui.card.vivinoBatchScanBtn")}</span>
+              <small>${this._t("ui.card.refreshVivinoTitle")}</small>
+            </button>
+          </div>
+          <div class="inv-confirm-btns">
+            <button class="inv-confirm-cancel" @click=${() => (this._showReview = false)}>
+              ${this._t("ui.common.cancel")}
+            </button>
+          </div>
+        </div>
       </div>
     `;
   }
@@ -1938,7 +2350,7 @@ export class InventoryDialog extends LitElement {
           >
             <option value="all" ?selected=${this._foodFilter === "all"}>${this._t("ui.inventory.anyFood")}</option>
             ${foodOptions.map(
-              (f) => html`<option value=${f} ?selected=${this._foodFilter === f}>${f}</option>`
+              (f) => html`<option value=${f} ?selected=${this._foodFilter === f}>${this._foodLabel(f)}</option>`
             )}
           </select>
           ${missingPairings
@@ -2171,7 +2583,20 @@ export class InventoryDialog extends LitElement {
           <!-- Header -->
           <div class="inv-header">
             <span class="inv-header-title">${this._t("ui.inventory.title")}</span>
-            <button class="inv-close" @click=${this._close}>✕</button>
+            <div class="inv-header-actions">
+              <button
+                class="inv-review-btn"
+                @click=${() => (this._showReview = true)}
+                ?disabled=${this.analyzing || this.batchVivino}
+              >
+                ${this.analyzing
+                  ? this._t("ui.card.aiScanning")
+                  : this.batchVivino
+                    ? this._t("ui.card.vivinoScanning")
+                    : this._t("ui.inventory.reviewBtn")}
+              </button>
+              <button class="inv-close" @click=${this._close}>✕</button>
+            </div>
           </div>
 
           <!-- Inventory / History Toggle -->
@@ -2304,6 +2729,17 @@ export class InventoryDialog extends LitElement {
           </div>
 
           ${this._showFilters ? this._renderFilterPanel(missingPairings) : nothing}
+
+          ${this.pairingMode && this._foodFilter !== "all"
+            ? html`
+                <div class="inv-pairing-banner">
+                  <span>${FOOD_ICONS[this._foodFilter] ?? "🍽️"} ${this._t("ui.inventory.pairingBanner", { food: this._foodLabel(this._foodFilter) })}</span>
+                  <button class="inv-clear-filters" @click=${() => (this._showPairingPicker = true)}>
+                    ${this._t("ui.inventory.pairingChange")}
+                  </button>
+                </div>
+              `
+            : nothing}
 
           ${narrowed
             ? html`
@@ -2475,6 +2911,8 @@ export class InventoryDialog extends LitElement {
             : nothing}
 
           ${this._renderEnrichConfirm()}
+          ${this._renderReviewChooser()}
+          ${this._renderPairingPicker()}
 
           <!-- CSV Import Mode Overlay -->
           ${this._confirmImport && this._pendingImport

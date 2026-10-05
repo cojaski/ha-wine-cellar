@@ -1,6 +1,6 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { sharedStyles } from "./styles";
+import { sharedStyles, touchStyles } from "./styles";
 import { Wine, Cabinet, CellarStats, WINE_TYPE_COLORS, WineType, StorageRow, StorageRowType, BOX_SIZES, getRackSlots, getWineLocation, getShelfSlotGroups, ShelfSlotGroup, getSteppedSlotGroups, SteppedSlotGroup } from "./models";
 import { t } from "./i18n";
 import { matchesQuery } from "./utils/search";
@@ -96,6 +96,7 @@ export class WineCellarCard extends LitElement {
   @state() private _showVivinoAiSettings = false;
   @state() private _showWineList = false;
   @state() private _showInventory = false;
+  @state() private _inventoryPairing = false;
   private _findingsCache: {
     wines: Wine[];
     cabinets: Cabinet[];
@@ -263,12 +264,6 @@ export class WineCellarCard extends LitElement {
         display: flex;
         flex-direction: column;
         gap: 0;
-      }
-
-      .title-credit {
-        font-size: 0.45em;
-        font-weight: 400;
-        color: var(--wc-text-secondary);
       }
 
       .header-actions {
@@ -548,7 +543,35 @@ export class WineCellarCard extends LitElement {
           gap: 16px;
         }
       }
+
+      /* Touch: a bottle's size is its cabinet's width divided by its column
+         count, so fewer, wider cabinets per row is what makes the cells big
+         enough to tap. Declared after the width queries above so it wins. */
+      @media (pointer: coarse) {
+        .cabinets-row {
+          grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+          gap: 16px;
+        }
+        .stat-action {
+          display: inline-flex;
+          align-items: center;
+          min-height: 44px;
+          padding: 0 12px;
+          margin: 0;
+        }
+        .stats-bar {
+          align-items: center;
+        }
+        .header-actions {
+          gap: 8px;
+        }
+        .wine-list-item,
+        .removal-entry {
+          min-height: 52px;
+        }
+      }
     `,
+    touchStyles,
   ];
 
   setConfig(config: WineCellarCardConfig) {
@@ -2476,14 +2499,16 @@ export class WineCellarCard extends LitElement {
 
   private async _onRemoveWine(e: CustomEvent) {
     try {
-      await this.hass.callWS({
-        type: "wine_cellar/remove_wine",
-        wine_id: e.detail.wine_id,
-        reason: e.detail.reason || "other",
-      });
+      const { wine_id, reason, name, personal_rating, drink_notes, buy_again } = e.detail;
+      const msg: Record<string, unknown> = { type: "wine_cellar/remove_wine", wine_id, reason: reason || "other" };
+      // Only the Drink button sends a tasting log.
+      if (buy_again !== undefined) Object.assign(msg, { personal_rating, drink_notes, buy_again });
+      await this.hass.callWS(msg);
       await this._loadData();
+      if (reason === "drank" && name) this._showToast(this._t("toast.wineDrunk", { name }));
     } catch (err) {
       console.error("Failed to remove wine", err);
+      this._showToast(this._t("toast.removeWineFailed"));
     }
   }
 
@@ -2529,30 +2554,9 @@ export class WineCellarCard extends LitElement {
             <span class="title-icon">🍷</span>
             <div class="title-text">
               <div>${title}</div>
-              <div class="title-credit">${this._t("ui.card.titleCredit")}</div>
             </div>
           </div>
           <div class="header-actions">
-            ${this._hasGemini ? html`
-              <button
-                class="btn btn-primary"
-                style="font-size: 0.8em; padding: 5px 10px; background: #1565c0;"
-                @click=${this._batchAnalyzeWines}
-                title="${this._t("ui.card.fullAiAnalysisTitle")}"
-                ?disabled=${this._analyzing || this._batchVivino}
-              >
-                ${this._analyzing ? this._t("ui.card.aiScanning") : this._t("ui.card.aiBatchScanBtn")}
-              </button>
-            ` : nothing}
-            <button
-              class="btn btn-primary"
-              style="font-size: 0.8em; padding: 5px 10px; background: #8e24aa;"
-              @click=${this._batchRefreshVivino}
-              title="${this._t("ui.card.refreshVivinoTitle")}"
-              ?disabled=${this._batchVivino || this._analyzing}
-            >
-              ${this._batchVivino ? this._t("ui.card.vivinoScanning") : this._t("ui.card.vivinoBatchScanBtn")}
-            </button>
             ${this._hasVivinoAccount ? html`
               <button
                 class="btn btn-primary"
@@ -2566,23 +2570,27 @@ export class WineCellarCard extends LitElement {
                   : (this._vivinoSyncMode ? this._t("ui.card.vivinoSyncBtn") : this._t("ui.card.vivinoImportBtn"))}
               </button>
             ` : nothing}
-            ${this._hasGemini ? html`
-              <button
-                class="btn btn-primary"
-                style="font-size: 0.8em; padding: 5px 10px; background: #00695c;"
-                @click=${() => (this._showWineList = true)}
-                title="${this._t("ui.card.scanListTitle")}"
-              >
-                ${this._t("ui.card.scanListBtn")}
-              </button>
-            ` : nothing}
             <button
               class="btn btn-primary"
               style="font-size: 0.8em; padding: 5px 10px; background: #37474f;"
-              @click=${() => (this._showInventory = true)}
+              @click=${() => {
+                this._inventoryPairing = false;
+                this._showInventory = true;
+              }}
               title="${this._t("ui.card.inventoryTitle")}"
             >
               ${this._t("ui.card.inventoryBtn")}
+            </button>
+            <button
+              class="btn btn-primary"
+              style="font-size: 0.8em; padding: 5px 10px; background: #5d4037;"
+              @click=${() => {
+                this._inventoryPairing = true;
+                this._showInventory = true;
+              }}
+              title="${this._t("ui.card.pairingsTitle")}"
+            >
+              ${this._t("ui.card.pairingsBtn")}
             </button>
             <button
               class="btn btn-primary"
@@ -2824,6 +2832,7 @@ export class WineCellarCard extends LitElement {
                       .map(
                         (cab) => html`
                           <cabinet-grid
+                            single
                             .hass=${this.hass}
                             .cabinet=${cab}
                             .wines=${this._getCabinetWines(cab.id)}
@@ -3020,6 +3029,7 @@ export class WineCellarCard extends LitElement {
                             <div class="wine-list-meta">
                               ${wine.winery}${wine.vintage ? ` · ${wine.vintage}` : ""}
                               ${wine.rating ? ` · ★${wine.rating}` : ""}
+                              ${wine.price ? html` · ${this._metadataCurrency} ${wine.price}` : nothing}
                               ${wine.disposition
                                 ? html` · <span style="color: ${
                                     wine.disposition === "D" ? "#2e7d32" :
@@ -3103,60 +3113,6 @@ export class WineCellarCard extends LitElement {
             </div>
           </div>
         ` : nothing}
-        ${this._showBatchVivinoConfirm ? html`
-          <div class="dialog-overlay" @click=${() => (this._showBatchVivinoConfirm = false)}>
-            <div class="dialog" style="max-width:340px;padding:24px;text-align:center" @click=${(e: Event) => e.stopPropagation()}>
-              <h3 style="margin:0 0 4px;font-size:1em;color:var(--wc-text)">${this._t("ui.card.vivinoBatchScanTitle")}</h3>
-              <p style="margin:0 0 16px;font-size:0.85em;color:var(--wc-text-secondary)">
-                ${this._t("ui.card.somePhotosQuestion")}
-              </p>
-              ${this._hasGemini ? html`
-                <label style="display:flex;align-items:center;gap:6px;justify-content:center;font-size:0.8em;color:var(--wc-text-secondary);margin-bottom:16px;cursor:pointer">
-                  <input
-                    type="checkbox"
-                    .checked=${this._batchAiFallback}
-                    @change=${(e: Event) => (this._batchAiFallback = (e.target as HTMLInputElement).checked)}
-                  />
-                  ${this._t("ui.card.tryAiNoMatch")}
-                </label>
-              ` : nothing}
-              <div style="display:flex;flex-direction:column;gap:8px">
-                <button class="btn btn-primary" style="background:#8e24aa" @click=${() => this._runBatchVivino("keep")}>
-                  ${this._t("ui.card.keepExistingPhotos")}
-                </button>
-                <button
-                  style="padding:8px 16px;border-radius:20px;border:1px solid var(--wc-border);background:transparent;color:var(--wc-text);cursor:pointer;font-size:0.85em"
-                  @click=${() => this._runBatchVivino("replace")}
-                >${this._t("ui.card.replaceWithVivinoPhotos")}</button>
-                <button
-                  style="margin-top:4px;padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.8em"
-                  @click=${() => (this._showBatchVivinoConfirm = false)}
-                >${this._t("ui.common.cancel")}</button>
-              </div>
-            </div>
-          </div>
-        ` : nothing}
-
-        <!-- Batch AI Analysis Confirm -->
-        ${this._showBatchAiConfirm ? html`
-          <div class="dialog-overlay" @click=${() => (this._showBatchAiConfirm = false)}>
-            <div class="dialog" style="max-width:340px;padding:24px;text-align:center" @click=${(e: Event) => e.stopPropagation()}>
-              <h3 style="margin:0 0 4px;font-size:1em;color:var(--wc-text)">${this._t("ui.card.runAiBatchTitle")}</h3>
-              <p style="margin:0 0 16px;font-size:0.85em;color:var(--wc-text-secondary)">
-                ${this._t("ui.card.runAiBatchBody", { n: this._wines.length })}
-              </p>
-              <div style="display:flex;flex-direction:column;gap:8px">
-                <button class="btn btn-primary" style="background:#1565c0" @click=${this._runBatchAnalyzeWines}>
-                  ${this._t("ui.card.runOnNWines", { n: this._wines.length })}
-                </button>
-                <button
-                  style="margin-top:4px;padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.8em"
-                  @click=${() => (this._showBatchAiConfirm = false)}
-                >${this._t("ui.common.cancel")}</button>
-              </div>
-            </div>
-          </div>
-        ` : nothing}
 
         <!-- Wine Detail Dialog -->
         <wine-detail-dialog
@@ -3211,6 +3167,7 @@ export class WineCellarCard extends LitElement {
           .enableWhisky=${this._enableWhisky}
           .defaultWineType=${this._defaultWineType}
           @close=${() => { this._showAddDialog = false; this._addToBuyListMode = false; }}
+          @scan-list=${() => (this._showWineList = true)}
           @wine-added=${this._onWineAdded}
           @buy-list-updated=${() => this._loadData()}
         ></add-wine-dialog>
@@ -3247,6 +3204,9 @@ export class WineCellarCard extends LitElement {
           .hasGemini=${this._hasGemini}
           .enableWhisky=${this._enableWhisky}
           .currency=${this._metadataCurrency}
+          .analyzing=${this._analyzing}
+          .batchVivino=${this._batchVivino}
+          .pairingMode=${this._inventoryPairing}
           @close=${() => (this._showInventory = false)}
           @wine-updated=${() => this._loadData()}
           @locate-wine=${(e: CustomEvent) => {
@@ -3268,7 +3228,65 @@ export class WineCellarCard extends LitElement {
             this._showToast(this._t("toast.tapToMove", { name: e.detail.wine.name }));
           }}
           @remove-wine=${this._onRemoveWine}
+          @batch-ai-scan=${this._batchAnalyzeWines}
+          @batch-vivino-scan=${this._batchRefreshVivino}
         ></inventory-dialog>
+
+        <!-- Batch scan confirms: after the inventory dialog, which launches them, so they stack above it -->
+        ${this._showBatchVivinoConfirm ? html`
+          <div class="dialog-overlay" @click=${() => (this._showBatchVivinoConfirm = false)}>
+            <div class="dialog" style="max-width:340px;padding:24px;text-align:center" @click=${(e: Event) => e.stopPropagation()}>
+              <h3 style="margin:0 0 4px;font-size:1em;color:var(--wc-text)">${this._t("ui.card.vivinoBatchScanTitle")}</h3>
+              <p style="margin:0 0 16px;font-size:0.85em;color:var(--wc-text-secondary)">
+                ${this._t("ui.card.somePhotosQuestion")}
+              </p>
+              ${this._hasGemini ? html`
+                <label style="display:flex;align-items:center;gap:6px;justify-content:center;font-size:0.8em;color:var(--wc-text-secondary);margin-bottom:16px;cursor:pointer">
+                  <input
+                    type="checkbox"
+                    .checked=${this._batchAiFallback}
+                    @change=${(e: Event) => (this._batchAiFallback = (e.target as HTMLInputElement).checked)}
+                  />
+                  ${this._t("ui.card.tryAiNoMatch")}
+                </label>
+              ` : nothing}
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <button class="btn btn-primary" style="background:#8e24aa" @click=${() => this._runBatchVivino("keep")}>
+                  ${this._t("ui.card.keepExistingPhotos")}
+                </button>
+                <button
+                  style="padding:8px 16px;border-radius:20px;border:1px solid var(--wc-border);background:transparent;color:var(--wc-text);cursor:pointer;font-size:0.85em"
+                  @click=${() => this._runBatchVivino("replace")}
+                >${this._t("ui.card.replaceWithVivinoPhotos")}</button>
+                <button
+                  style="margin-top:4px;padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.8em"
+                  @click=${() => (this._showBatchVivinoConfirm = false)}
+                >${this._t("ui.common.cancel")}</button>
+              </div>
+            </div>
+          </div>
+        ` : nothing}
+
+        <!-- Batch AI Analysis Confirm -->
+        ${this._showBatchAiConfirm ? html`
+          <div class="dialog-overlay" @click=${() => (this._showBatchAiConfirm = false)}>
+            <div class="dialog" style="max-width:340px;padding:24px;text-align:center" @click=${(e: Event) => e.stopPropagation()}>
+              <h3 style="margin:0 0 4px;font-size:1em;color:var(--wc-text)">${this._t("ui.card.runAiBatchTitle")}</h3>
+              <p style="margin:0 0 16px;font-size:0.85em;color:var(--wc-text-secondary)">
+                ${this._t("ui.card.runAiBatchBody", { n: this._wines.length })}
+              </p>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <button class="btn btn-primary" style="background:#1565c0" @click=${this._runBatchAnalyzeWines}>
+                  ${this._t("ui.card.runOnNWines", { n: this._wines.length })}
+                </button>
+                <button
+                  style="margin-top:4px;padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.8em"
+                  @click=${() => (this._showBatchAiConfirm = false)}
+                >${this._t("ui.common.cancel")}</button>
+              </div>
+            </div>
+          </div>
+        ` : nothing}
 
         <!-- Rack Settings Dialog -->
         <rack-settings-dialog

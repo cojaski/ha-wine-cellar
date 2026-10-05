@@ -11,7 +11,7 @@ import {
   producerLabel,
   varietyLabel,
 } from "../models";
-import { sharedStyles } from "../styles";
+import { sharedStyles, touchStyles } from "../styles";
 import { t } from "../i18n";
 import { resizeImageForStorage } from "../utils/image";
 import {
@@ -574,6 +574,7 @@ export class AddWineDialog extends LitElement {
         flex-shrink: 0;
       }
     `,
+    touchStyles,
   ];
 
   private get _steps(): Step[] {
@@ -641,6 +642,12 @@ export class AddWineDialog extends LitElement {
     this._scanMode = "idle";
     this.open = false;
     this.dispatchEvent(new CustomEvent("close"));
+  }
+
+  /** Hand off to the wine-list scanner: the card closes this dialog and opens that one. */
+  private _openScanList() {
+    this._close();
+    this.dispatchEvent(new CustomEvent("scan-list"));
   }
 
   private async _lookupBarcode() {
@@ -1113,6 +1120,22 @@ export class AddWineDialog extends LitElement {
               <div class="scan-option-desc">
                 ${this._hasGemini
                   ? this._t("ui.addWine.takePhotoOfLabel")
+                  : this._t("ui.addWine.requiresGeminiKey")}
+              </div>
+            </div>
+          </button>
+
+          <button
+            class="scan-option ${this._hasGemini ? "" : "disabled"}"
+            @click=${() => this._hasGemini && this._openScanList()}
+            title=${this._hasGemini ? "" : this._t("ui.addWine.configureGeminiTitle")}
+          >
+            <span class="scan-option-icon">🍽️</span>
+            <div class="scan-option-text">
+              <div class="scan-option-title">${this._t("ui.addWine.scanListTitle")}</div>
+              <div class="scan-option-desc">
+                ${this._hasGemini
+                  ? this._t("ui.addWine.scanListDesc")
                   : this._t("ui.addWine.requiresGeminiKey")}
               </div>
             </div>

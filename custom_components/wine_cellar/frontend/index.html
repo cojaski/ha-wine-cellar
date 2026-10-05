@@ -103,6 +103,21 @@
       { id: "bl-3", name: "Krug Grande Cuvée", winery: "Krug", region: "Champagne", country: "France", vintage: null, type: "sparkling", grape_variety: "Chardonnay/Pinot Noir/Pinot Meunier", rating: 4.6, ratings_count: 9100, image_url: "https://images.vivino.com/thumbs/pAUYc6kMTVakGjmSQb8VSQ_375x500.jpg", price: null, retail_price: 200, notes: "Anniversary gift idea", description: "The benchmark for prestige Champagne. Rich, toasty, complex.", food_pairings: "Shellfish, Appetizers", alcohol: "12.0%", disposition: "D", drink_window: "", ai_ratings: null, added_at: "2026-03-03T10:00:00Z" },
       { id: "bl-4", name: "Penfolds Bin 389 2020", winery: "Penfolds", region: "South Australia", country: "Australia", vintage: 2020, type: "red", grape_variety: "Cabernet/Shiraz", rating: 4.2, ratings_count: 3400, image_url: "https://images.vivino.com/thumbs/Erl91FhwTMadO2v2NR1PzA_375x500.jpg", price: null, retail_price: 55, notes: "", description: "Baby Grange. Dark fruit, chocolate, and spice.", food_pairings: "Beef, BBQ, Game", alcohol: "14.5%", disposition: "D", drink_window: "2024-2032", ai_ratings: { rating_ws: 91 }, added_at: "2026-03-04T10:00:00Z" },
     ];
+    // Mirrors WineCellarStorage._sync_buy_again: one linked Buy List item per entry.
+    function mockSetBuyAgain(entry, wine) {
+      const linked = mockBuyList.findIndex(b => b.id === entry.buy_list_item_id);
+      if (entry.buy_again) {
+        if (linked < 0) {
+          const item = { ...wine, id: "bl-" + Date.now(), source: "buy_again", added_at: new Date().toISOString() };
+          mockBuyList.push(item);
+          entry.buy_list_item_id = item.id;
+        }
+      } else {
+        if (linked >= 0) mockBuyList.splice(linked, 1);
+        entry.buy_list_item_id = "";
+      }
+    }
+
 
     const mockWineHistory = [
       { id: "h-1", original_id: "old-1", name: "Penfolds Grange 2016", winery: "Penfolds", vintage: 2016, type: "red", region: "South Australia", country: "Australia", grape_variety: "Shiraz", rating: 4.7, price: 750, image_url: "https://images.vivino.com/thumbs/KVQJznT6T2u7ggCzLaFLvQ_375x500.jpg", added_at: "2023-06-01T10:00:00Z", removed_at: "2026-02-14T19:30:00Z", reason: "drank" },
@@ -195,10 +210,20 @@
                 price: removed.price, image_url: removed.image_url || "",
                 added_at: removed.added_at || "", removed_at: new Date().toISOString(),
                 reason: msg.reason || "other",
+                personal_rating: msg.personal_rating ?? null, drink_notes: msg.drink_notes || "",
+                buy_again: !!msg.buy_again, buy_list_item_id: "",
               });
+              if (msg.buy_again) mockSetBuyAgain(mockWineHistory[0], removed);
               mockWines.splice(idx, 1);
             }
             return { success: true };
+          case "wine_cellar/update_history_entry": {
+            const entry = mockWineHistory.find(h => h.id === msg.history_id);
+            if (!entry) throw { code: "not_found", message: "History entry not found" };
+            for (const k of ["personal_rating", "drink_notes", "buy_again"]) if (k in msg) entry[k] = msg[k];
+            if ("buy_again" in msg) mockSetBuyAgain(entry, entry);
+            return { entry: { ...entry } };
+          }
           case "wine_cellar/get_wine_history":
             return { history: mockWineHistory };
           case "wine_cellar/clear_wine_history":

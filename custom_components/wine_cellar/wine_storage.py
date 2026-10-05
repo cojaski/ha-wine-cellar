@@ -353,8 +353,18 @@ class WineCellarStorage:
         self._data[CONF_WINES].append(wine)
         return wine
 
-    def remove_wine(self, wine_id: str, reason: str = "other") -> bool:
-        """Remove a wine bottle by ID and archive it to history."""
+    def remove_wine(
+        self,
+        wine_id: str,
+        reason: str = "other",
+        drink_info: dict[str, Any] | None = None,
+    ) -> bool:
+        """Remove a wine bottle by ID and archive it to history.
+
+        ``drink_info`` carries the optional tasting log the Drink button
+        collects (personal rating, notes, buy again); the same fields can be
+        filled in later through ``update_history_entry``.
+        """
         wines = self._data[CONF_WINES]
         for i, wine in enumerate(wines):
             if wine["id"] == wine_id:
@@ -376,8 +386,14 @@ class WineCellarStorage:
                     "removed_at": datetime.now(timezone.utc).isoformat(),
                     "reason": reason,
                     "full_wine": dict(wine),
+                    "personal_rating": None,
+                    "drink_notes": "",
+                    "buy_again": False,
+                    "buy_list_item_id": "",
                 }
                 self._data[CONF_WINE_HISTORY].append(history_entry)
+                if drink_info:
+                    self._apply_history_updates(history_entry, drink_info)
                 wines.pop(i)
                 return True
         return False
@@ -401,6 +417,45 @@ class WineCellarStorage:
                 history.pop(i)
                 return wine
         return None
+
+    _HISTORY_EDITABLE_KEYS = ("personal_rating", "drink_notes", "buy_again")
+
+    def update_history_entry(
+        self, history_id: str, updates: dict[str, Any]
+    ) -> dict[str, Any] | None:
+        """Update the tasting log of a history entry (rating, notes, buy again)."""
+        for entry in self._data[CONF_WINE_HISTORY]:
+            if entry["id"] == history_id:
+                self._apply_history_updates(entry, updates)
+                return entry
+        return None
+
+    def _apply_history_updates(
+        self, entry: dict[str, Any], updates: dict[str, Any]
+    ) -> None:
+        for key in self._HISTORY_EDITABLE_KEYS:
+            if key in updates:
+                entry[key] = updates[key]
+        if "buy_again" in updates:
+            self._sync_buy_again(entry)
+
+    def _sync_buy_again(self, entry: dict[str, Any]) -> None:
+        """Keep the Buy List in step with a history entry's buy-again flag.
+
+        Ticking it puts the wine on the Buy List once; unticking takes that
+        same item back off, unless the user already removed or moved it.
+        """
+        linked_id = entry.get("buy_list_item_id") or ""
+        linked = self.get_buy_list_item(linked_id) if linked_id else None
+        if entry.get("buy_again"):
+            if linked is None:
+                source = dict(entry.get("full_wine") or entry)
+                source["source"] = "buy_again"
+                entry["buy_list_item_id"] = self.add_buy_list_item(source)["id"]
+        else:
+            if linked is not None:
+                self.remove_buy_list_item(linked_id)
+            entry["buy_list_item_id"] = ""
 
     _LOCATION_KEYS = ("cabinet_id", "row", "col", "zone")
 

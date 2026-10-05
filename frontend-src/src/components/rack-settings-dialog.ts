@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Cabinet, Wine, StorageRow, getStorageRowTypeLabels, BOX_SIZES, getSteppedLevels } from "../models";
-import { sharedStyles } from "../styles";
+import { sharedStyles, touchStyles } from "../styles";
 import { t } from "../i18n";
 
 type Mode = "list" | "add" | "edit" | "delete-confirm";
@@ -526,6 +526,7 @@ export class RackSettingsDialog extends LitElement {
         background: rgba(198, 40, 40, 0.05);
       }
     `,
+    touchStyles,
   ];
 
   // Shorthand for t(key, this.hass?.language, params) — see wine-cellar-card.ts.

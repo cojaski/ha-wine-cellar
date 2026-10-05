@@ -667,3 +667,81 @@ export const sharedStyles = css`
     color: var(--wc-primary-text);
   }
 `;
+
+/* Finger-sized controls on touch screens. Each component appends this LAST
+   in its static styles so it outranks the component's own compact sizing
+   (equal-specificity rules resolve by order). Gated on pointer: coarse rather
+   than width: a tablet in landscape is as wide as a laptop but still has no
+   mouse, while a narrow desktop window still has one. 44px is Apple's minimum
+   tap target, and min-height wins over any fixed height a component sets. */
+export const touchStyles = css`
+  @media (pointer: coarse) {
+    button,
+    select,
+    .tab,
+    .btn,
+    .file-input-label {
+      min-height: 44px;
+    }
+
+    /* Icon-only buttons by name, not every button: an explicit min-width on a
+       flex item replaces its default min-width: auto, letting labelled
+       buttons (the tabs) shrink below their text and overlap. */
+    .btn-icon,
+    .icon-btn,
+    .close-btn,
+    .inv-close,
+    .inv-sort-dir,
+    .small-btn,
+    .photo-action-btn,
+    .bl-remove-btn,
+    .depth-panel-close,
+    .search-clear,
+    .edit-toggle {
+      min-width: 44px;
+    }
+
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+    select,
+    textarea {
+      min-height: 44px;
+      /* Under 16px, Safari zooms the whole page when the field takes focus. */
+      font-size: 16px;
+    }
+
+    input[type="checkbox"],
+    input[type="radio"] {
+      width: 22px;
+      height: 22px;
+    }
+
+    /* Leave room between neighbours so a fat finger doesn't hit two. */
+    .tab-bar,
+    .dialog-footer {
+      gap: 8px;
+    }
+
+    .depth-panel-slots {
+      gap: 12px;
+    }
+
+    .depth-slot-delete {
+      width: 32px;
+      height: 32px;
+      top: 4px;
+      right: 4px;
+      font-size: 1em;
+    }
+
+    .depth-slot-wine,
+    .depth-slot-empty,
+    .depth-panel-grow {
+      min-height: 52px;
+      box-sizing: border-box;
+    }
+
+    .depth-panel {
+      width: 360px;
+    }
+  }
+`;

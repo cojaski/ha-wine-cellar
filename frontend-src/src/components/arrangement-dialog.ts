@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Cabinet, Wine } from "../models";
-import { sharedStyles } from "../styles";
+import { sharedStyles, touchStyles } from "../styles";
 import { Finding, FindingKind, Move, analyzeArrangement } from "../utils/arrange";
 import { placementIn } from "../utils/location";
 import { t } from "../i18n";
@@ -130,6 +130,7 @@ export class ArrangementDialog extends LitElement {
         margin-top: 8px;
       }
     `,
+    touchStyles,
   ];
 
   // Shorthand for t(key, this.hass?.language, params) — see wine-cellar-card.ts.

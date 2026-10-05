@@ -380,7 +380,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # damaged store, so this stays behind the one check that tells the two
     # apart.
     if storage.loaded_from_disk:
-        await photos.prune(hass, storage.wines, storage.wine_history)
+        await photos.prune(hass, storage.wines, storage.wine_history, storage.buy_list)
     else:
         _LOGGER.debug("Skipping photo prune: nothing was loaded from storage")
 

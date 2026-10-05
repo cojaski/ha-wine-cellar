@@ -33,6 +33,27 @@
     "storage": "Storage",
     "slot": "Slot"
   },
+  "foodCategory": {
+    "aperitif": "Aperitif & tapas",
+    "charcuterie": "Charcuterie & cured meats",
+    "cheese": "Cheese",
+    "seafood": "Seafood",
+    "fish": "Fish",
+    "duck": "Duck & foie gras",
+    "poultry": "Poultry",
+    "lamb": "Lamb",
+    "game": "Game",
+    "beef": "Beef & red meat",
+    "pork": "Pork & veal",
+    "stew": "Stews & dishes in sauce",
+    "grill": "Grilled & barbecue",
+    "spicy": "Spicy & world cuisine",
+    "mediterranean": "Mediterranean cuisine",
+    "salad": "Salads",
+    "vegetarian": "Vegetarian dishes",
+    "dessert": "Desserts",
+    "other": "Other pairings"
+  },
   "ui": {
     "common": {
       "cancel": "Cancel",
@@ -45,13 +66,15 @@
       "replace": "replace",
       "new": "new",
       "colonSep": ": ",
-      "clearSearch": "Clear search"
+      "clearSearch": "Clear search",
+      "save": "Save"
     },
     "disposition": {
       "drink": "Drink",
       "drinkNow": "Drink Now",
       "hold": "Hold",
-      "pastPeak": "Past Peak"
+      "pastPeak": "Past Peak",
+      "past": "Past"
     },
     "arrangement": {
       "header": "🧹 Arrangement",
@@ -110,8 +133,9 @@
       "vivinoScanning": "Vivino Scanning...",
       "vivinoSyncBtn": "🔄 Vivino Sync",
       "vivinoSyncing": "Vivino Syncing...",
-      "scanListBtn": "🍽️ Scan List",
       "inventoryBtn": "📦 Inventory",
+      "pairingsBtn": "🍽️ Pairings",
+      "pairingsTitle": "Find a wine to go with what you're eating",
       "addWineBtn": "+ Add Wine",
       "fullAiAnalysisTitle": "Full AI analysis on all wines (disposition, ratings, price, description)",
       "refreshVivinoTitle": "Refresh all wines from Vivino (ratings, price, description)",
@@ -138,7 +162,6 @@
       "syncCountConfirmBodyOne": "Vivino will be set to {n} bottle — the count in Cork Dork right now. The adjustment shows up in your Vivino cellar history and can be undone there.",
       "syncCountConfirmBodyMany": "Vivino will be set to {n} bottles — the count in Cork Dork right now. The adjustment shows up in your Vivino cellar history and can be undone there.",
       "syncCountConfirmBtn": "Yes — update Vivino",
-      "scanListTitle": "Scan a wine list or receipt for ratings and value",
       "inventoryTitle": "Browse full cellar inventory",
       "unplacedTitle": "Bottles in Unassigned, not yet placed on a rack",
       "suggestionsTitle": "Suggestions read from where your bottles already are",
@@ -177,7 +200,6 @@
       "addBox": "Add Box",
       "addSlot": "Add Slot",
       "panelStored": "stored",
-      "titleCredit": "originally created by @BaconWappedBitcoin",
       "copyBannerText": "Copying \"{name}\" — tap empty cells or bulk/box zones to place copies",
       "moveBannerText": "Moving \"{name}\" — tap a cell to place it",
       "buyListMoveBannerText": "Placing \"{name}\" — tap a cell in your cellar",
@@ -195,11 +217,14 @@
       "reorderRackTitle": "Tap to view and reorder this rack"
     },
     "inventory": {
+      "reviewBtn": "🔎 Inventory review",
+      "reviewTitle": "Inventory review",
+      "reviewIntro": "Re-check every bottle in the cellar. Choose a source:",
       "title": "📦 Inventory",
       "tabInventory": "Inventory",
       "tabHistory": "History",
       "loadingHistory": "Loading history...",
-      "noHistory": "No removal history yet",
+      "noHistory": "No history yet — bottles you drink or remove show up here",
       "winesRemoved": "{n} wines removed",
       "restoreBtn": "Restore",
       "clearHistoryBtn": "Clear History",
@@ -268,6 +293,11 @@
       "filterNotAnalyzed": "Not analyzed",
       "pairsWith": "Pairs with",
       "anyFood": "Any food",
+      "pairingTitle": "What are you eating?",
+      "pairingIntro": "Pick a dish to see the wines that go with it.",
+      "pairingEmpty": "No wines have food pairings yet. A Vivino lookup adds them.",
+      "pairingBanner": "Pairs with {food}",
+      "pairingChange": "Change",
       "missingPairingsHintOne": "{n} wine has no pairing data. Only Vivino supplies pairings — use “Fill from Vivino” below the list.",
       "missingPairingsHintMany": "{n} wines have no pairing data. Only Vivino supplies pairings — use “Fill from Vivino” below the list.",
       "country": "Country",
@@ -358,7 +388,18 @@
       "racksWord": "racks",
       "buyListItemsWord": "buy list items",
       "createdLabel": "Created: {date}",
-      "restoreNowBtn": "Restore Now"
+      "restoreNowBtn": "Restore Now",
+      "buyAgainOnly": "🛒 Buy again only",
+      "noBuyAgain": "No wines marked “buy again” yet",
+      "buyAgainTitle": "Buy again — on your Buy List",
+      "addNotesBtn": "📝 Add notes",
+      "editNotesBtn": "📝 Notes",
+      "myRatingLabel": "My rating",
+      "drinkNotesPlaceholder": "How was it? What did you pair it with?",
+      "buyAgainLabel": "Buy again?",
+      "buyAgainHint": "Adds it to your Buy List",
+      "historySaved": "Saved",
+      "historySaveFailed": "Failed to save"
     },
     "addWine": {
       "title": "Add Wine",
@@ -377,6 +418,8 @@
       "configureGeminiTitle": "Configure Gemini API key in integration settings",
       "takePhotoOfLabel": "Take a photo of the wine label",
       "requiresGeminiKey": "Requires Gemini API key in settings",
+      "scanListTitle": "Scan Wine List",
+      "scanListDesc": "Photo of a wine list or receipt — ratings and value",
       "orEnterManually": "or enter manually",
       "barcodePlaceholder": "Enter barcode...",
       "lookUpBtn": "Look Up",
@@ -470,7 +513,13 @@
       "ratingsCountSuffix": " ({count} ratings)",
       "myRating": "My Rating",
       "aiScanBtn": "AI Scan",
-      "scanLabelBtn": "Scan Label",
+      "scanLabelBtn": "Label",
+      "lookupBtn": "Vivino / AI",
+      "lookupTitle": "Update this bottle's details from Vivino or AI",
+      "lookupChooserTitle": "Update details",
+      "lookupChooserIntro": "Choose a source:",
+      "lookupVivinoDesc": "Ratings, description, grapes and food pairings from Vivino",
+      "lookupAiDesc": "Full AI analysis: disposition, ratings, price, description",
       "scanLabelTitle": "Take a fresh photo of the label to update this bottle's photo and details",
       "resetAiContentBtn": "Reset text",
       "resetAiContentTitle": "Clear the description and food pairings so the next Vivino/AI lookup regenerates them from scratch (fixes text stuck in the wrong language)",
@@ -548,7 +597,14 @@
       "chamberingReady": "🌡️ Ready to serve",
       "chamberingWarmUp": "🌡️ Take out {duration} before serving",
       "chamberingChill": "🧊 Chill ~15–20 min before serving",
-      "aiLabel": "AI"
+      "aiLabel": "AI",
+      "drinkBtn": "Drink",
+      "drinkTitle": "🍷 Cheers!",
+      "drinkIntro": "Log how it was — or skip and add notes later from History.",
+      "drinkNotesPlaceholder": "How was it? What did you pair it with?",
+      "buyAgainLabel": "Buy again?",
+      "buyAgainHint": "Adds it to your Buy List",
+      "drinkConfirmBtn": "Drink it"
     },
     "rack": {
       "failedToAddRack": "Failed to add rack.",
@@ -761,6 +817,8 @@
     "tapToPlace": "Tap a cell to place \"{name}\"",
     "movedToCellar": "Moved \"{name}\" to cellar",
     "moveToCellarFailed": "Failed to move to cellar",
-    "tapToMove": "Tap a cell to move \"{name}\""
+    "tapToMove": "Tap a cell to move \"{name}\"",
+    "wineDrunk": "Cheers! {name} is now in History",
+    "removeWineFailed": "Failed to remove wine"
   }
 }

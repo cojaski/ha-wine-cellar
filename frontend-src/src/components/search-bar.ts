@@ -1,6 +1,6 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { sharedStyles } from "../styles";
+import { sharedStyles, touchStyles } from "../styles";
 import { t } from "../i18n";
 
 @customElement("wine-search-bar")
@@ -133,7 +133,18 @@ export class WineSearchBar extends LitElement {
         color: #fff;
         border-color: var(--wc-primary);
       }
+
+      /* Touch: room for the 44px clear button inside the field. */
+      @media (pointer: coarse) {
+        input {
+          padding-right: 52px;
+        }
+        .search-clear {
+          right: 0;
+        }
+      }
     `,
+    touchStyles,
   ];
 
   // Shorthand for t(key, this.hass?.language, params) — see wine-cellar-card.ts.
