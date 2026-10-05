@@ -21127,7 +21127,7 @@ let WineCellarCard = class WineCellarCard extends i$1 {
             ` : A$1}
             <button
               class="btn btn-primary"
-              style="font-size: 0.8em; padding: 5px 10px; background: #5e3557;"
+              style="font-size: 0.8em; padding: 5px 10px; background: #37474f;"
               @click=${() => {
             this._inventoryPairing = false;
             this._showInventory = true;
@@ -21138,7 +21138,7 @@ let WineCellarCard = class WineCellarCard extends i$1 {
             </button>
             <button
               class="btn btn-primary"
-              style="font-size: 0.8em; padding: 5px 10px; background: #5d4037;"
+              style="font-size: 0.8em; padding: 5px 10px; background: #5e3557;"
               @click=${() => {
             this._inventoryPairing = true;
             this._showInventory = true;
