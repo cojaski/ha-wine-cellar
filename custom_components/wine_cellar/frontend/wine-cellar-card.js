@@ -5483,32 +5483,7 @@ CabinetGrid.styles = [
         }
       }
 
-      /* Touch: grid cells grow with the cabinet (see .cabinets-row in
-         wine-cellar-card.ts); bin bottles and the tappable title have fixed
-         sizes, so they're raised here. */
-      @media (pointer: coarse) {
-        .row {
-          gap: 3px;
-          margin-bottom: 3px;
-        }
-        .cabinet-name.clickable {
-          padding: 12px 0;
-        }
-        .zone-bottle {
-          width: 40px;
-          height: 40px;
-          font-size: 10px;
-        }
-        .bottom-zone {
-          gap: 8px;
-          min-height: 56px;
-        }
-        .zone-box-row {
-          padding: 8px;
-        }
-      }
     `,
-    touchStyles,
 ];
 __decorate([
     n$1({ attribute: false })
@@ -22464,14 +22439,10 @@ WineCellarCard.styles = [
         }
       }
 
-      /* Touch: a bottle's size is its cabinet's width divided by its column
-         count, so fewer, wider cabinets per row is what makes the cells big
-         enough to tap. Declared after the width queries above so it wins. */
+      /* Touch: finger-sized header and list controls. Rack sizing is left
+         to the width queries above — forcing wider cabinets here made every
+         bottle far too large on a tablet. */
       @media (pointer: coarse) {
-        .cabinets-row {
-          grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
-          gap: 16px;
-        }
         .stat-action {
           display: inline-flex;
           align-items: center;

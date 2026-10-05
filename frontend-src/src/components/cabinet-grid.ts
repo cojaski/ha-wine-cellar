@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Cabinet, Wine, StorageRow, WINE_TYPE_COLORS, WineType, getShelfSlotGroups, ShelfSlotGroup, getSteppedSlotGroups, SteppedSlotGroup } from "../models";
-import { sharedStyles, touchStyles } from "../styles";
+import { sharedStyles } from "../styles";
 import { t } from "../i18n";
 import { readSensorValue } from "../utils/chambering";
 
@@ -775,32 +775,7 @@ export class CabinetGrid extends LitElement {
         }
       }
 
-      /* Touch: grid cells grow with the cabinet (see .cabinets-row in
-         wine-cellar-card.ts); bin bottles and the tappable title have fixed
-         sizes, so they're raised here. */
-      @media (pointer: coarse) {
-        .row {
-          gap: 3px;
-          margin-bottom: 3px;
-        }
-        .cabinet-name.clickable {
-          padding: 12px 0;
-        }
-        .zone-bottle {
-          width: 40px;
-          height: 40px;
-          font-size: 10px;
-        }
-        .bottom-zone {
-          gap: 8px;
-          min-height: 56px;
-        }
-        .zone-box-row {
-          padding: 8px;
-        }
-      }
     `,
-    touchStyles,
   ];
 
   // Shorthand for t(key, this.hass?.language, params) — see wine-cellar-card.ts.
