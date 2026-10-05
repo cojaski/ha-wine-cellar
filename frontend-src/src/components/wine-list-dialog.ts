@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Wine, WineListItem, WineType, WINE_TYPE_COLORS, WINE_TYPE_LABELS } from "../models";
-import { sharedStyles } from "../styles";
+import { sharedStyles, touchStyles } from "../styles";
 import { t } from "../i18n";
 import "./label-camera";
 import "./wine-detail-dialog";
@@ -350,6 +350,7 @@ export class WineListDialog extends LitElement {
         }
       }
     `,
+    touchStyles,
   ];
 
   // Shorthand for t(key, this.hass?.language, params) — see wine-cellar-card.ts.

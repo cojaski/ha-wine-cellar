@@ -2,98 +2,108 @@ import { normalizeText } from "./search";
 
 // Groups the AI's free-form, highly specific food-pairing suggestions
 // ("daube de bœuf", "bœuf bourguignon", "carbonnade flamande"...) into a
-// small set of generic categories for the "Accords avec" filter, so the
+// small set of generic categories for the "Pairs with" filter, so the
 // dropdown doesn't balloon into dozens of near-synonyms and near-duplicates
 // (plural/singular, "grillé"/"grillée"/"grillés" agreement, etc). The wine
 // detail view still shows the AI's original text unchanged — categorization
 // only affects this filter facet.
 //
-// Categories are French-language, matching the free-text pairings this
-// cellar's AI currently generates (metadata_language "fr"). If metadata
-// language is ever switched, these category labels would need their own
-// per-language variants — not done here since the data itself isn't
-// generated in another language for this cellar.
+// Each category is a stable id (translated for display via the
+// "foodCategory" group in i18n/{lang}.json) plus match keywords in every
+// language pairings arrive in: French for AI-written pairings, English for
+// Vivino's food names ("Beef", "Lamb", "Game (deer, venison)", "Mature and
+// hard cheese"…). Keywords are accent-free and lowercase, matching
+// normalizeText().
 //
 // Checked in order, most specific (named protein/ingredient) before generic
-// cooking-style buckets ("Grillades", "Plats mijotés"), so a dish that names
-// its protein lands under that protein rather than the generic bucket.
+// cooking-style buckets (grilled, stews), so a dish that names its protein
+// lands under that protein rather than the generic bucket.
 interface FoodCategory {
-  label: string;
+  id: string;
   keywords: string[];
 }
 
-const OTHER_LABEL = "Autres accords";
+export const OTHER_FOOD_CATEGORY = "other";
 
 const FOOD_CATEGORIES: FoodCategory[] = [
   {
-    label: "Apéritif & tapas",
-    keywords: ["aperitif", "tapas", "gougere", "amuse-bouche", "amuse bouche"],
+    id: "aperitif",
+    keywords: ["aperitif", "tapas", "gougere", "amuse-bouche", "amuse bouche", "appetizer", "snack", "finger food"],
   },
   {
-    label: "Charcuterie",
-    keywords: ["charcuterie", "rillette", "saucisson", "jambon", "pate", "terrine", "salami", "chorizo"],
+    id: "charcuterie",
+    keywords: ["charcuterie", "rillette", "saucisson", "jambon", "pate", "terrine", "salami", "chorizo", "cured meat", "ham", "prosciutto"],
   },
   {
-    label: "Fromages",
-    keywords: ["fromage", "roquefort", "comte", "chevre", "brie", "camembert", "munster", "reblochon", "morbier", "parmesan"],
+    id: "cheese",
+    keywords: ["fromage", "roquefort", "comte", "chevre", "brie", "camembert", "munster", "reblochon", "morbier", "parmesan", "cheese"],
   },
   {
-    label: "Fruits de mer",
-    keywords: ["fruits de mer", "huitre", "crevette", "homard", "crustace", "coquille", "moule", "langouste", "crabe", "sushi", "sashimi"],
+    id: "seafood",
+    keywords: ["fruits de mer", "huitre", "crevette", "homard", "crustace", "coquille", "moule", "langouste", "crabe", "sushi", "sashimi", "shellfish", "seafood", "oyster", "shrimp", "prawn", "lobster", "crab", "mussel", "scallop"],
   },
   {
-    label: "Poissons",
-    keywords: ["poisson", "saumon", "cabillaud", "sole", "brochet", "truite", "papillote", "thon", "dorade", "morue", "bar"],
+    id: "fish",
+    keywords: ["poisson", "saumon", "cabillaud", "sole", "brochet", "truite", "papillote", "thon", "dorade", "morue", "bar", "fish", "salmon", "tuna", "cod", "trout", "halibut"],
   },
   {
-    label: "Canard & foie gras",
-    keywords: ["canard", "magret", "foie gras"],
+    id: "duck",
+    keywords: ["canard", "magret", "foie gras", "duck"],
   },
   {
-    label: "Volaille",
-    keywords: ["volaille", "poulet", "poularde", "dinde", "pintade", "chapon"],
+    id: "poultry",
+    keywords: ["volaille", "poulet", "poularde", "dinde", "pintade", "chapon", "poultry", "chicken", "turkey"],
   },
   {
-    label: "Agneau",
-    keywords: ["agneau", "gigot"],
+    id: "lamb",
+    keywords: ["agneau", "gigot", "lamb"],
   },
   {
-    label: "Gibier",
-    keywords: ["gibier", "cerf", "chevreuil", "sanglier", "biche", "faisan", "perdrix", "lievre"],
+    id: "game",
+    keywords: ["gibier", "cerf", "chevreuil", "sanglier", "biche", "faisan", "perdrix", "lievre", "game", "venison", "deer", "boar", "pheasant", "rabbit"],
   },
   {
-    label: "Bœuf & viandes rouges",
-    keywords: ["boeuf", "entrecote", "steak", "tournedos", "viande rouge", "viandes rouges", "cote de boeuf"],
+    id: "beef",
+    keywords: ["boeuf", "entrecote", "steak", "tournedos", "viande rouge", "viandes rouges", "cote de boeuf", "beef", "red meat"],
   },
   {
-    label: "Plats mijotés & en sauce",
-    keywords: ["daube", "bourguignon", "carbonnade", "civet", "cassoulet", "mijote", "en sauce", "ragout", "pot-au-feu", "blanquette", "estouffade"],
+    id: "pork",
+    keywords: ["porc", "veau", "pork", "veal"],
   },
   {
-    label: "Grillades & barbecue",
-    keywords: ["grillade", "grille", "barbecue", "brochette"],
+    id: "stew",
+    keywords: ["daube", "bourguignon", "carbonnade", "civet", "cassoulet", "mijote", "en sauce", "ragout", "pot-au-feu", "blanquette", "estouffade", "stew", "braise"],
   },
   {
-    label: "Cuisine épicée & du monde",
-    keywords: ["curry", "epice", "asiatique", "wok", "tex-mex", "mexicain", "indien", "thai", "szechuan"],
+    id: "grill",
+    keywords: ["grillade", "grille", "barbecue", "brochette", "grilled", "bbq"],
   },
   {
-    label: "Cuisine méditerranéenne",
-    keywords: ["~mediterran", "~provenc", "ratatouille", "tajine"],
+    id: "spicy",
+    keywords: ["curry", "epice", "asiatique", "wok", "tex-mex", "mexicain", "indien", "thai", "szechuan", "spicy", "asian", "mexican", "indian"],
   },
   {
-    label: "Salades",
-    keywords: ["salade"],
+    id: "mediterranean",
+    keywords: ["~mediterran", "~provenc", "ratatouille", "tajine", "pasta", "pizza"],
   },
   {
-    label: "Plats végétariens",
-    keywords: ["risotto", "legume", "~vegetarien", "asperge", "champignon", "quiche"],
+    id: "salad",
+    keywords: ["salade", "salad"],
   },
   {
-    label: "Desserts",
-    keywords: ["dessert", "chocolat", "tarte", "patisserie", "gateau", "glace", "sorbet", "fruit"],
+    id: "vegetarian",
+    keywords: ["risotto", "legume", "~vegetarien", "asperge", "champignon", "quiche", "~vegetarian", "vegetable", "vegan", "mushroom", "asparagus"],
+  },
+  {
+    id: "dessert",
+    keywords: ["dessert", "chocolat", "tarte", "patisserie", "gateau", "glace", "sorbet", "fruit", "chocolate", "cake", "pastry", "fruity"],
   },
 ];
+
+// Every id categorizeFoodPairing() can return, so a saved filter value
+// from an older build (which stored the French label itself) can be
+// recognised as stale and reset.
+export const FOOD_CATEGORY_IDS: string[] = [...FOOD_CATEGORIES.map((c) => c.id), OTHER_FOOD_CATEGORY];
 
 // Two matching modes per keyword:
 // - default: word-boundary match allowing an optional French "e"/"s"/"es"
@@ -116,17 +126,17 @@ function matchesKeyword(haystack: string, keyword: string): boolean {
   return new RegExp(`\\b${keyword}(?:e?s?)\\b`).test(haystack);
 }
 
-// Maps one split pairing ("daube de bœuf") to its generic category label
-// ("Plats mijotés & en sauce"). Falls back to a shared "Autres accords"
+// Maps one split pairing ("daube de bœuf", "Beef") to its generic category
+// id ("stew", "beef"). Falls back to a shared "other"
 // bucket when nothing matches, rather than showing the raw specific text —
 // keeping the filter list short is the whole point of this function.
 export function categorizeFoodPairing(pairing: string): string {
   const haystack = normalizeText(pairing);
-  if (!haystack) return OTHER_LABEL;
+  if (!haystack) return OTHER_FOOD_CATEGORY;
   for (const category of FOOD_CATEGORIES) {
     if (category.keywords.some((kw) => matchesKeyword(haystack, kw))) {
-      return category.label;
+      return category.id;
     }
   }
-  return OTHER_LABEL;
+  return OTHER_FOOD_CATEGORY;
 }

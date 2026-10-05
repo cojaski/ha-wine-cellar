@@ -2,7 +2,7 @@ import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Wine, Cabinet, WineType, WINE_TYPE_COLORS, WINE_TYPE_LABELS, getWineTypeLabels, WineHistoryItem, getWineLocation, getRemovalReasons } from "../models";
 import { t } from "../i18n";
-import { sharedStyles } from "../styles";
+import { sharedStyles, touchStyles } from "../styles";
 import {
   matchesQuery,
   normalizeText,
@@ -11,7 +11,7 @@ import {
   splitMulti,
   collectFacet,
 } from "../utils/search";
-import { categorizeFoodPairing } from "../utils/foodCategories";
+import { categorizeFoodPairing, FOOD_CATEGORY_IDS } from "../utils/foodCategories";
 import "./wine-detail-dialog";
 
 type SortField =
@@ -58,6 +58,10 @@ export class InventoryDialog extends LitElement {
   @property({ type: Boolean }) hasGemini = false;
   @property({ type: Boolean }) enableWhisky = false;
   @property({ type: String }) currency = "USD";
+  // Batch AI / Vivino scans run in the card (they outlive this dialog); these
+  // only mirror their progress so the review button can show it.
+  @property({ type: Boolean }) analyzing = false;
+  @property({ type: Boolean }) batchVivino = false;
 
   @state() private _searchQuery = "";
   @state() private _typeFilter = DEFAULT_FILTERS.typeFilter;
@@ -96,6 +100,7 @@ export class InventoryDialog extends LitElement {
   @state() private _enriching: "" | "vivino" | "ai" = "";
   @state() private _confirmEnrich: "" | "vivino" | "ai" = "";
   @state() private _confirmEnrichRetry = false;
+  @state() private _showReview = false;
   @state() private _viewMode: "inventory" | "history" = "inventory";
   @state() private _historyItems: WineHistoryItem[] = [];
   @state() private _historyLoading = false;
@@ -157,6 +162,54 @@ export class InventoryDialog extends LitElement {
 
       .inv-close:hover {
         background: var(--wc-hover);
+      }
+
+      .inv-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .inv-review-btn {
+        background: #37474f;
+        color: #fff;
+        border: none;
+        border-radius: 16px;
+        padding: 5px 12px;
+        font-size: 0.8em;
+        cursor: pointer;
+      }
+
+      .inv-review-btn:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+
+      .inv-review-options {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .inv-review-option {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 14px;
+        color: #fff;
+        cursor: pointer;
+        text-align: left;
+        font-size: 0.9em;
+        font-weight: 500;
+      }
+
+      .inv-review-option small {
+        font-size: 0.8em;
+        font-weight: 400;
+        opacity: 0.85;
       }
 
       .inv-stats {
@@ -795,6 +848,7 @@ export class InventoryDialog extends LitElement {
         }
       }
     `,
+    touchStyles,
   ];
 
   updated(changedProps: Map<string, unknown>) {
@@ -841,7 +895,11 @@ export class InventoryDialog extends LitElement {
       if (p.dispositionFilter) this._dispositionFilter = p.dispositionFilter;
       if (p.countryFilter) this._countryFilter = p.countryFilter;
       if (p.grapeFilter) this._grapeFilter = p.grapeFilter;
-      if (p.foodFilter) this._foodFilter = p.foodFilter;
+      // Older builds saved the French category label itself; only a known
+      // category id is a valid filter now.
+      if (p.foodFilter && (p.foodFilter === "all" || FOOD_CATEGORY_IDS.includes(p.foodFilter))) {
+        this._foodFilter = p.foodFilter;
+      }
       if (p.cabinetFilter) this._cabinetFilter = p.cabinetFilter;
       if (typeof p.minRating === "number") this._minRating = p.minRating;
       if (p.maxPrice !== undefined) this._maxPrice = p.maxPrice;
@@ -928,8 +986,15 @@ export class InventoryDialog extends LitElement {
   // balloon this dropdown into dozens of near-synonyms. Each split pairing
   // is mapped to a generic category (see foodCategories.ts) so the filter
   // stays short — the wine detail view still shows the original AI text.
+  // Options are category ids, sorted by their translated label.
   private _foodOptions(): string[] {
-    return collectFacet(this.wines, (w) => splitMulti(w.food_pairings).map(categorizeFoodPairing));
+    return collectFacet(this.wines, (w) => splitMulti(w.food_pairings).map(categorizeFoodPairing)).sort(
+      (a, b) => this._foodLabel(a).localeCompare(this._foodLabel(b))
+    );
+  }
+
+  private _foodLabel(id: string): string {
+    return this._t(`foodCategory.${id}`);
   }
 
   private _winesWithoutPairings(): number {
@@ -1351,6 +1416,40 @@ export class InventoryDialog extends LitElement {
           html`<strong>${missAI.length}</strong> ${this._t("ui.inventory.enrichRetryAI")}`,
           this._t("ui.inventory.retryAI")
         )}
+      </div>
+    `;
+  }
+
+  private _startReview(kind: "ai" | "vivino") {
+    this._showReview = false;
+    this.dispatchEvent(new CustomEvent(kind === "ai" ? "batch-ai-scan" : "batch-vivino-scan"));
+  }
+
+  private _renderReviewChooser() {
+    if (!this._showReview) return nothing;
+    return html`
+      <div class="inv-confirm-overlay" @click=${() => (this._showReview = false)}>
+        <div class="inv-confirm-box" @click=${(e: Event) => e.stopPropagation()}>
+          <h3>${this._t("ui.inventory.reviewTitle")}</h3>
+          <p>${this._t("ui.inventory.reviewIntro")}</p>
+          <div class="inv-review-options">
+            ${this.hasGemini ? html`
+              <button class="inv-review-option" style="background:#1565c0" @click=${() => this._startReview("ai")}>
+                <span>${this._t("ui.card.aiBatchScanBtn")}</span>
+                <small>${this._t("ui.card.fullAiAnalysisTitle")}</small>
+              </button>
+            ` : nothing}
+            <button class="inv-review-option" style="background:#8e24aa" @click=${() => this._startReview("vivino")}>
+              <span>${this._t("ui.card.vivinoBatchScanBtn")}</span>
+              <small>${this._t("ui.card.refreshVivinoTitle")}</small>
+            </button>
+          </div>
+          <div class="inv-confirm-btns">
+            <button class="inv-confirm-cancel" @click=${() => (this._showReview = false)}>
+              ${this._t("ui.common.cancel")}
+            </button>
+          </div>
+        </div>
       </div>
     `;
   }
@@ -1938,7 +2037,7 @@ export class InventoryDialog extends LitElement {
           >
             <option value="all" ?selected=${this._foodFilter === "all"}>${this._t("ui.inventory.anyFood")}</option>
             ${foodOptions.map(
-              (f) => html`<option value=${f} ?selected=${this._foodFilter === f}>${f}</option>`
+              (f) => html`<option value=${f} ?selected=${this._foodFilter === f}>${this._foodLabel(f)}</option>`
             )}
           </select>
           ${missingPairings
@@ -2171,7 +2270,20 @@ export class InventoryDialog extends LitElement {
           <!-- Header -->
           <div class="inv-header">
             <span class="inv-header-title">${this._t("ui.inventory.title")}</span>
-            <button class="inv-close" @click=${this._close}>✕</button>
+            <div class="inv-header-actions">
+              <button
+                class="inv-review-btn"
+                @click=${() => (this._showReview = true)}
+                ?disabled=${this.analyzing || this.batchVivino}
+              >
+                ${this.analyzing
+                  ? this._t("ui.card.aiScanning")
+                  : this.batchVivino
+                    ? this._t("ui.card.vivinoScanning")
+                    : this._t("ui.inventory.reviewBtn")}
+              </button>
+              <button class="inv-close" @click=${this._close}>✕</button>
+            </div>
           </div>
 
           <!-- Inventory / History Toggle -->
@@ -2475,6 +2587,7 @@ export class InventoryDialog extends LitElement {
             : nothing}
 
           ${this._renderEnrichConfirm()}
+          ${this._renderReviewChooser()}
 
           <!-- CSV Import Mode Overlay -->
           ${this._confirmImport && this._pendingImport

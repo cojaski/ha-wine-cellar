@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Wine, Cabinet, TastingNotes, getWineTypeLabels, getSelectableWineTypes, WINE_TYPE_COLORS, WineType, getRemovalReasons, getWineLocation, producerLabel, varietyLabel } from "../models";
-import { sharedStyles } from "../styles";
+import { sharedStyles, touchStyles } from "../styles";
 import { resizeImageForStorage } from "../utils/image";
 import { t } from "../i18n";
 import { getChamberingAdvice, formatDuration } from "../utils/chambering";
@@ -597,7 +597,29 @@ export class WineDetailDialog extends LitElement {
           grid-template-columns: 1fr;
         }
       }
+
+      /* Touch: the photo dots stay small visually but get a finger-sized
+         invisible hit area; the location link gets a full-height row. */
+      @media (pointer: coarse) {
+        .photo-dots {
+          gap: 16px;
+        }
+        .photo-dot {
+          position: relative;
+          width: 10px;
+          height: 10px;
+        }
+        .photo-dot::after {
+          content: "";
+          position: absolute;
+          inset: -14px;
+        }
+        .wine-location {
+          min-height: 44px;
+        }
+      }
     `,
+    touchStyles,
   ];
 
   // Shorthand for t(key, this.hass?.language, params) — see wine-cellar-card.ts.

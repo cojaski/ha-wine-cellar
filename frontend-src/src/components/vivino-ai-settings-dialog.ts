@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { WineType, getSelectableWineTypes } from "../models";
-import { sharedStyles } from "../styles";
+import { sharedStyles, touchStyles } from "../styles";
 import { t } from "../i18n";
 
 @customElement("vivino-ai-settings-dialog")
@@ -113,7 +113,14 @@ export class VivinoAiSettingsDialog extends LitElement {
         color: var(--wc-text-secondary);
         font-style: italic;
       }
+
+      @media (pointer: coarse) {
+        .fallback-label {
+          min-height: 44px;
+        }
+      }
     `,
+    touchStyles,
   ];
 
   // Shorthand for t(key, this.hass?.language, params) — see wine-cellar-card.ts.

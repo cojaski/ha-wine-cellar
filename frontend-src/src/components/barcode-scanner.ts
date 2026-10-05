@@ -1,6 +1,6 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { sharedStyles } from "../styles";
+import { sharedStyles, touchStyles } from "../styles";
 import { cameraBlockedReason, describeCameraError } from "../utils/camera";
 import { t } from "../i18n";
 import {
@@ -131,6 +131,7 @@ export class BarcodeScanner extends LitElement {
         font-style: italic;
       }
     `,
+    touchStyles,
   ];
 
   // Shorthand for t(key, this.hass?.language, params) — see wine-cellar-card.ts.

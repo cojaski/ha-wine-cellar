@@ -37,6 +37,18 @@ export class StarRating extends LitElement {
       display: block;
     }
 
+    /* Touch: tapping the left or right half of a star picks a half or a
+       whole point, so each half needs to be finger-sized. _onClick measures
+       the padded box, so the halves stay correct. */
+    @media (pointer: coarse) {
+      .star:not(.readonly) {
+        padding: 10px 6px;
+      }
+      :host {
+        gap: 0;
+      }
+    }
+
     .rating-text {
       margin-left: 6px;
       font-size: 0.9em;

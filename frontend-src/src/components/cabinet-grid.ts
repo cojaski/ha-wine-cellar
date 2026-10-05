@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Cabinet, Wine, StorageRow, WINE_TYPE_COLORS, WineType, getShelfSlotGroups, ShelfSlotGroup, getSteppedSlotGroups, SteppedSlotGroup } from "../models";
-import { sharedStyles } from "../styles";
+import { sharedStyles, touchStyles } from "../styles";
 import { t } from "../i18n";
 import { readSensorValue } from "../utils/chambering";
 
@@ -30,6 +30,9 @@ export class CabinetGrid extends LitElement {
   // circle with no letter (green/blue/purple) — a settings-level choice,
   // not per-bottle.
   @property({ type: String }) dispositionDisplay: "letter" | "dot" = "letter";
+  // Set when the card shows this rack on its own tab. The D/H/P badge then
+  // shrinks into the top-left corner so the label photo stays visible.
+  @property({ type: Boolean, reflect: true }) single = false;
 
   @state() private _dragOverCell: string | null = null;
 
@@ -405,6 +408,22 @@ export class CabinetGrid extends LitElement {
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
       }
 
+      /* Single-rack view: a quarter-size badge tucked into the top-left
+         corner instead of covering the middle of the label. */
+      :host([single]) .cell .disposition,
+      :host([single]) .zone-bottle .disposition,
+      :host([single]) .zone-shelf-dot .disposition {
+        top: 6%;
+        left: 6%;
+        transform: none;
+        width: 16%;
+        height: 16%;
+        min-width: 10px;
+        min-height: 10px;
+        font-size: 0;
+        border-width: 1px;
+      }
+
       .zone-bottle:hover {
         transform: scale(1.1);
       }
@@ -743,7 +762,33 @@ export class CabinetGrid extends LitElement {
           margin-bottom: 1px;
         }
       }
+
+      /* Touch: grid cells grow with the cabinet (see .cabinets-row in
+         wine-cellar-card.ts); bin bottles and the tappable title have fixed
+         sizes, so they're raised here. */
+      @media (pointer: coarse) {
+        .row {
+          gap: 3px;
+          margin-bottom: 3px;
+        }
+        .cabinet-name.clickable {
+          padding: 12px 0;
+        }
+        .zone-bottle {
+          width: 40px;
+          height: 40px;
+          font-size: 10px;
+        }
+        .bottom-zone {
+          gap: 8px;
+          min-height: 56px;
+        }
+        .zone-box-row {
+          padding: 8px;
+        }
+      }
     `,
+    touchStyles,
   ];
 
   // Shorthand for t(key, this.hass?.language, params) — see wine-cellar-card.ts.
