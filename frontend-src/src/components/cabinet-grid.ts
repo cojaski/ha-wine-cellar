@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing, TemplateResult } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Cabinet, Wine, StorageRow, WINE_TYPE_COLORS, WineType, getShelfSlotGroups, ShelfSlotGroup, getSteppedSlotGroups, SteppedSlotGroup } from "../models";
-import { sharedStyles, touchStyles } from "../styles";
+import { sharedStyles } from "../styles";
 import { t } from "../i18n";
 import { readSensorValue } from "../utils/chambering";
 
@@ -30,9 +30,6 @@ export class CabinetGrid extends LitElement {
   // circle with no letter (green/blue/purple) — a settings-level choice,
   // not per-bottle.
   @property({ type: String }) dispositionDisplay: "letter" | "dot" = "letter";
-  // Set when the card shows this rack on its own tab. The D/H/P badge then
-  // shrinks into the top-left corner so the label photo stays visible.
-  @property({ type: Boolean, reflect: true }) single = false;
 
   @state() private _dragOverCell: string | null = null;
 
@@ -320,7 +317,8 @@ export class CabinetGrid extends LitElement {
 
       .depth-dots {
         position: absolute;
-        bottom: 16%;
+        /* Clear of the Drink/Hold/Past pill along the bottom edge. */
+        bottom: 26%;
         left: 50%;
         transform: translateX(-50%);
         display: flex;
@@ -375,6 +373,8 @@ export class CabinetGrid extends LitElement {
         position: relative;
         width: 28px;
         height: 28px;
+        /* Sizes its Drink/Hold/Past pill (cqi) like a rack cell's. */
+        container-type: inline-size;
         border-radius: 4px;
         display: flex;
         align-items: center;
@@ -408,12 +408,12 @@ export class CabinetGrid extends LitElement {
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
       }
 
-      /* Single-rack view: a short text pill ("Drink"/"Hold"/"Past") along
-         the bottom edge instead of covering the middle of the label. Same
-         colors as the badge; only the shape and position change. */
-      :host([single]) .cell .disposition,
-      :host([single]) .zone-bottle .disposition,
-      :host([single]) .zone-shelf-dot .disposition {
+      /* A short text pill ("Drink"/"Hold"/"Past") along the bottom edge
+         instead of a letter covering the middle of the label. Same colors
+         as the badge; only the shape and position change. */
+      .cell .disposition,
+      .zone-bottle .disposition,
+      .zone-shelf-dot .disposition {
         top: auto;
         bottom: 4%;
         left: 50%;
@@ -431,9 +431,32 @@ export class CabinetGrid extends LitElement {
         text-overflow: ellipsis;
       }
 
-      /* Lift the depth dots clear of the pill. */
-      :host([single]) .depth-dots {
-        bottom: 26%;
+      .disposition .disp-letter {
+        display: none;
+      }
+
+      /* Too small for a word: back to the round letter badge. */
+      @container (max-width: 25px) {
+        .disposition .disp-word {
+          display: none;
+        }
+        .disposition .disp-letter {
+          display: inline;
+        }
+        .cell .disposition,
+        .zone-bottle .disposition,
+        .zone-shelf-dot .disposition {
+          bottom: auto;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          width: 68%;
+          height: 68%;
+          max-width: none;
+          padding: 0;
+          border-radius: 50%;
+          font-size: 9px;
+          font-weight: 700;
+        }
       }
 
       .zone-bottle:hover {
@@ -775,32 +798,7 @@ export class CabinetGrid extends LitElement {
         }
       }
 
-      /* Touch: grid cells grow with the cabinet (see .cabinets-row in
-         wine-cellar-card.ts); bin bottles and the tappable title have fixed
-         sizes, so they're raised here. */
-      @media (pointer: coarse) {
-        .row {
-          gap: 3px;
-          margin-bottom: 3px;
-        }
-        .cabinet-name.clickable {
-          padding: 12px 0;
-        }
-        .zone-bottle {
-          width: 40px;
-          height: 40px;
-          font-size: 10px;
-        }
-        .bottom-zone {
-          gap: 8px;
-          min-height: 56px;
-        }
-        .zone-box-row {
-          padding: 8px;
-        }
-      }
     `,
-    touchStyles,
   ];
 
   // Shorthand for t(key, this.hass?.language, params) — see wine-cellar-card.ts.
@@ -835,6 +833,12 @@ export class CabinetGrid extends LitElement {
     );
   }
 
+  // The sensor's own unit (°F in a US home), not an assumed °C.
+  private _tempUnit(): string {
+    const id = this.cabinet.temp_sensor_entity_id || "";
+    return this.hass?.states?.[id]?.attributes?.unit_of_measurement || "°C";
+  }
+
   // Live temperature/humidity of the zone, shown in its title banner.
   private _renderSensorBadge() {
     const temp = readSensorValue(this.hass, this.cabinet.temp_sensor_entity_id || "");
@@ -842,7 +846,7 @@ export class CabinetGrid extends LitElement {
     if (temp === null && humidity === null) return nothing;
     return html`
       <span class="zone-sensor-badge">
-        ${temp !== null ? html`🌡️ ${temp}°C` : nothing}${temp !== null && humidity !== null ? " · " : nothing}${humidity !== null ? html`💧 ${humidity}%` : nothing}
+        ${temp !== null ? html`🌡️ ${temp}${this._tempUnit()}` : nothing}${temp !== null && humidity !== null ? " · " : nothing}${humidity !== null ? html`💧 ${humidity}%` : nothing}
       </span>
     `;
   }
@@ -936,17 +940,16 @@ export class CabinetGrid extends LitElement {
     return currentYear >= peakStart && currentYear <= drinkEnd;
   }
 
-  // The classic D/H/P letter badge (a "Drink"/"Hold"/"Past" pill in the
-  // single-rack view) — only in "letter" mode. In "dot" mode
+  // The "Drink"/"Hold"/"Past" pill — only in "letter" mode. In "dot" mode
   // there's no badge at all; _dispositionRingStyle below draws the status
   // as a thicker colored ring around the bottle instead, so the photo
   // stays uncovered.
   private _dispositionBadge(dispClass: string, disp: string, wine?: Wine, className = "disposition") {
     if (!dispClass || this.dispositionDisplay === "dot") return nothing;
     const peakClass = dispClass === "drink" && this._isInOrAfterPeakWindow(wine) ? "peak" : "";
-    // Single-rack view has room for a word instead of the bare letter.
-    const text = this.single ? this._t(`ui.disposition.${dispClass}`) : disp;
-    return html`<span class="${className} ${dispClass} ${peakClass}">${text}</span>`;
+    // Both are rendered; a container query picks the letter when the bottle
+    // is too small for the word (a dense rack in the all-racks view).
+    return html`<span class="${className} ${dispClass} ${peakClass}"><span class="disp-word">${this._t(`ui.disposition.${dispClass}`)}</span><span class="disp-letter">${disp}</span></span>`;
   }
 
   // "dot" mode's ring: a thicker border colored by disposition (green/blue/

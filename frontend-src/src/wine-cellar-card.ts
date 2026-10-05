@@ -503,9 +503,29 @@ export class WineCellarCard extends LitElement {
       @media (max-width: 599px) {
         .header-row {
           padding: 12px 12px 6px;
+          flex-wrap: wrap;
+          gap: 8px;
         }
         .title {
           font-size: 1.1em;
+        }
+        /* The header buttons get their own row under the title, sharing it
+           equally, instead of wrapping into a stack beside it. The
+           !important beats the buttons' inline padding/font-size. */
+        .header-actions {
+          flex: 1 1 100%;
+          flex-wrap: nowrap;
+        }
+        .header-actions .btn {
+          flex: 1 1 0;
+          min-width: 0;
+          padding: 6px 4px !important;
+          font-size: 0.8em !important;
+          justify-content: center;
+          text-align: center;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .stats-bar {
           flex-wrap: wrap;
@@ -544,14 +564,10 @@ export class WineCellarCard extends LitElement {
         }
       }
 
-      /* Touch: a bottle's size is its cabinet's width divided by its column
-         count, so fewer, wider cabinets per row is what makes the cells big
-         enough to tap. Declared after the width queries above so it wins. */
+      /* Touch: finger-sized header and list controls. Rack sizing is left
+         to the width queries above — forcing wider cabinets here made every
+         bottle far too large on a tablet. */
       @media (pointer: coarse) {
-        .cabinets-row {
-          grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
-          gap: 16px;
-        }
         .stat-action {
           display: inline-flex;
           align-items: center;
@@ -2832,7 +2848,6 @@ export class WineCellarCard extends LitElement {
                       .map(
                         (cab) => html`
                           <cabinet-grid
-                            single
                             .hass=${this.hass}
                             .cabinet=${cab}
                             .wines=${this._getCabinetWines(cab.id)}

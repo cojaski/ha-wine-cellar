@@ -543,6 +543,7 @@
       "alcoholPlaceholder": "ex. 13,5 %",
       "servingTempLabel": "Température idéale",
       "servingTempPlaceholder": "ex. 16-18°C",
+      "servingTempPlaceholderF": "ex. 61-64°F",
       "purchaseDateLabel": "Date d'achat",
       "drinkFromLabel": "À boire à partir de",
       "drinkFromPlaceholder": "ex. 2025",

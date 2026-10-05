@@ -324,15 +324,21 @@ const sharedStyles = i$4 `
 
   /* Phone: full-screen dialogs, compact forms */
   @media (max-width: 599px) {
+    /* The sheet stops below the iPhone's Dynamic Island / notch / status
+       bar: Home Assistant draws edge to edge (viewport-fit=cover), so a
+       sheet allowed the full 100vh slid under it. The overlay keeps that
+       strip clear and the sheet fills at most what's left. */
     .dialog {
       width: 100%;
       max-width: 100%;
-      max-height: 100vh;
+      max-height: 100%;
       border-radius: 12px 12px 0 0;
       margin-top: auto;
     }
     .dialog-overlay {
       align-items: flex-end;
+      box-sizing: border-box;
+      padding-top: calc(env(safe-area-inset-top, 0px) + 8px);
     }
     .dialog-header {
       padding: 16px 16px 10px;
@@ -359,6 +365,8 @@ const sharedStyles = i$4 `
     .depth-panel {
       width: 100% !important;
       border-radius: 0 !important;
+      /* Full-screen here, so it too must clear the Dynamic Island. */
+      padding-top: env(safe-area-inset-top, 0px);
     }
   }
 
@@ -1361,6 +1369,7 @@ var ui$1 = {
 		alcoholPlaceholder: "e.g. 13.5%",
 		servingTempLabel: "Serving temp.",
 		servingTempPlaceholder: "e.g. 16-18°C",
+		servingTempPlaceholderF: "e.g. 61-64°F",
 		purchaseDateLabel: "Purchase Date",
 		drinkFromLabel: "Drink From",
 		drinkFromPlaceholder: "e.g. 2025",
@@ -2194,6 +2203,7 @@ var ui = {
 		alcoholPlaceholder: "ex. 13,5 %",
 		servingTempLabel: "Température idéale",
 		servingTempPlaceholder: "ex. 16-18°C",
+		servingTempPlaceholderF: "ex. 61-64°F",
 		purchaseDateLabel: "Date d'achat",
 		drinkFromLabel: "À boire à partir de",
 		drinkFromPlaceholder: "ex. 2025",
@@ -3861,7 +3871,8 @@ function readSensorValue(hass, entityId) {
     return Number.isFinite(value) ? value : null;
 }
 // Parses "16-18°C" / "16°C" / "16-18" / "16" — lenient on purpose since this
-// is an AI-filled free-text field, not a structured one.
+// is an AI-filled free-text field, not a structured one. Always returns °C:
+// a value marked °F (typed by hand in a US home) is converted.
 function parseServingTemp(servingTemp) {
     if (!servingTemp)
         return null;
@@ -3871,15 +3882,46 @@ function parseServingTemp(servingTemp) {
     const numbers = (servingTemp.match(/\d+(?:[.,]\d+)?/g) || []).map((n) => parseFloat(n.replace(",", ".")));
     if (numbers.length === 0 || numbers.some((n) => !Number.isFinite(n)))
         return null;
-    if (numbers.length === 1)
-        return { low: numbers[0], high: numbers[0] };
-    return { low: Math.min(numbers[0], numbers[1]), high: Math.max(numbers[0], numbers[1]) };
+    const toC = /°\s*F|\dF\b/i.test(servingTemp) ? fToC : (n) => n;
+    const [a, b] = numbers.length === 1 ? [numbers[0], numbers[0]] : [numbers[0], numbers[1]];
+    return { low: toC(Math.min(a, b)), high: toC(Math.max(a, b)) };
+}
+const cToF = (c) => (c * 9) / 5 + 32;
+const fToC = (f) => ((f - 32) * 5) / 9;
+// Whether temperatures should be shown in °F: Home Assistant's own unit
+// system (Settings > System > General), not anything the card configures.
+function usesFahrenheit(hass) {
+    return hass?.config?.unit_system?.temperature === "°F";
+}
+// A serving temperature for display, in the unit Home Assistant uses.
+// Stored values are °C (that's what the AI writes); text that doesn't parse
+// as a temperature is shown as typed.
+function formatServingTemp(servingTemp, hass) {
+    const range = parseServingTemp(servingTemp);
+    if (!range)
+        return servingTemp || "";
+    const f = usesFahrenheit(hass);
+    const show = (c) => String(Math.round(f ? cToF(c) : c));
+    const unit = f ? "°F" : "°C";
+    const low = show(range.low);
+    const high = show(range.high);
+    return low === high ? `${low}${unit}` : `${low}-${high}${unit}`;
+}
+// A temperature sensor's reading in °C, whatever unit it reports in. A US
+// Home Assistant reports °F, while serving temperatures and the warm-up
+// math below are in °C.
+function readTemperatureC(hass, entityId) {
+    const value = readSensorValue(hass, entityId);
+    if (value === null)
+        return null;
+    const unit = hass.states[entityId]?.attributes?.unit_of_measurement;
+    return unit === "°F" ? fToC(value) : value;
 }
 function getChamberingAdvice(wine, cabinet, hass, roomSensorEntityId, timeConstantMinutes, equilibrationHours) {
     const range = parseServingTemp(wine.serving_temp);
     if (!range)
         return null;
-    const cellarTemp = readSensorValue(hass, cabinet?.temp_sensor_entity_id || "");
+    const cellarTemp = readTemperatureC(hass, cabinet?.temp_sensor_entity_id || "");
     if (cellarTemp === null)
         return null;
     if (wine.location_updated_at) {
@@ -3901,7 +3943,7 @@ function getChamberingAdvice(wine, cabinet, hass, roomSensorEntityId, timeConsta
     // so reaching `target` takes t = tau * ln((room - cellar) / (room - target)).
     // A warmer room therefore means a shorter wait, and the bottle can never
     // pass the room temperature — a target at or above it is unreachable.
-    const roomTemp = readSensorValue(hass, roomSensorEntityId);
+    const roomTemp = readTemperatureC(hass, roomSensorEntityId);
     if (roomTemp === null || !(timeConstantMinutes > 0))
         return null;
     // Aim for the middle of the serving range; if the room is too close to (or
@@ -3949,9 +3991,6 @@ let CabinetGrid = class CabinetGrid extends i$1 {
         // circle with no letter (green/blue/purple) — a settings-level choice,
         // not per-bottle.
         this.dispositionDisplay = "letter";
-        // Set when the card shows this rack on its own tab. The D/H/P badge then
-        // shrinks into the top-left corner so the label photo stays visible.
-        this.single = false;
         this._dragOverCell = null;
         // --- Long press (mobile move) ---
         this._longPressTimer = null;
@@ -3977,6 +4016,11 @@ let CabinetGrid = class CabinetGrid extends i$1 {
     _getBottomZoneWines() {
         return this.wines.filter((w) => w.cabinet_id === this.cabinet.id && w.zone === "bottom");
     }
+    // The sensor's own unit (°F in a US home), not an assumed °C.
+    _tempUnit() {
+        const id = this.cabinet.temp_sensor_entity_id || "";
+        return this.hass?.states?.[id]?.attributes?.unit_of_measurement || "°C";
+    }
     // Live temperature/humidity of the zone, shown in its title banner.
     _renderSensorBadge() {
         const temp = readSensorValue(this.hass, this.cabinet.temp_sensor_entity_id || "");
@@ -3985,7 +4029,7 @@ let CabinetGrid = class CabinetGrid extends i$1 {
             return A$1;
         return b$1 `
       <span class="zone-sensor-badge">
-        ${temp !== null ? b$1 `🌡️ ${temp}°C` : A$1}${temp !== null && humidity !== null ? " · " : A$1}${humidity !== null ? b$1 `💧 ${humidity}%` : A$1}
+        ${temp !== null ? b$1 `🌡️ ${temp}${this._tempUnit()}` : A$1}${temp !== null && humidity !== null ? " · " : A$1}${humidity !== null ? b$1 `💧 ${humidity}%` : A$1}
       </span>
     `;
     }
@@ -4069,8 +4113,7 @@ let CabinetGrid = class CabinetGrid extends i$1 {
         const drinkEnd = drinkYears.length === 2 ? drinkYears[1] : drinkYears[0];
         return currentYear >= peakStart && currentYear <= drinkEnd;
     }
-    // The classic D/H/P letter badge (a "Drink"/"Hold"/"Past" pill in the
-    // single-rack view) — only in "letter" mode. In "dot" mode
+    // The "Drink"/"Hold"/"Past" pill — only in "letter" mode. In "dot" mode
     // there's no badge at all; _dispositionRingStyle below draws the status
     // as a thicker colored ring around the bottle instead, so the photo
     // stays uncovered.
@@ -4078,9 +4121,9 @@ let CabinetGrid = class CabinetGrid extends i$1 {
         if (!dispClass || this.dispositionDisplay === "dot")
             return A$1;
         const peakClass = dispClass === "drink" && this._isInOrAfterPeakWindow(wine) ? "peak" : "";
-        // Single-rack view has room for a word instead of the bare letter.
-        const text = this.single ? this._t(`ui.disposition.${dispClass}`) : disp;
-        return b$1 `<span class="${className} ${dispClass} ${peakClass}">${text}</span>`;
+        // Both are rendered; a container query picks the letter when the bottle
+        // is too small for the word (a dense rack in the all-racks view).
+        return b$1 `<span class="${className} ${dispClass} ${peakClass}"><span class="disp-word">${this._t(`ui.disposition.${dispClass}`)}</span><span class="disp-letter">${disp}</span></span>`;
     }
     // "dot" mode's ring: a thicker border colored by disposition (green/blue/
     // purple) instead of the classic centered badge — the whole point is to
@@ -5028,7 +5071,8 @@ CabinetGrid.styles = [
 
       .depth-dots {
         position: absolute;
-        bottom: 16%;
+        /* Clear of the Drink/Hold/Past pill along the bottom edge. */
+        bottom: 26%;
         left: 50%;
         transform: translateX(-50%);
         display: flex;
@@ -5083,6 +5127,8 @@ CabinetGrid.styles = [
         position: relative;
         width: 28px;
         height: 28px;
+        /* Sizes its Drink/Hold/Past pill (cqi) like a rack cell's. */
+        container-type: inline-size;
         border-radius: 4px;
         display: flex;
         align-items: center;
@@ -5116,12 +5162,12 @@ CabinetGrid.styles = [
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
       }
 
-      /* Single-rack view: a short text pill ("Drink"/"Hold"/"Past") along
-         the bottom edge instead of covering the middle of the label. Same
-         colors as the badge; only the shape and position change. */
-      :host([single]) .cell .disposition,
-      :host([single]) .zone-bottle .disposition,
-      :host([single]) .zone-shelf-dot .disposition {
+      /* A short text pill ("Drink"/"Hold"/"Past") along the bottom edge
+         instead of a letter covering the middle of the label. Same colors
+         as the badge; only the shape and position change. */
+      .cell .disposition,
+      .zone-bottle .disposition,
+      .zone-shelf-dot .disposition {
         top: auto;
         bottom: 4%;
         left: 50%;
@@ -5139,9 +5185,32 @@ CabinetGrid.styles = [
         text-overflow: ellipsis;
       }
 
-      /* Lift the depth dots clear of the pill. */
-      :host([single]) .depth-dots {
-        bottom: 26%;
+      .disposition .disp-letter {
+        display: none;
+      }
+
+      /* Too small for a word: back to the round letter badge. */
+      @container (max-width: 25px) {
+        .disposition .disp-word {
+          display: none;
+        }
+        .disposition .disp-letter {
+          display: inline;
+        }
+        .cell .disposition,
+        .zone-bottle .disposition,
+        .zone-shelf-dot .disposition {
+          bottom: auto;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          width: 68%;
+          height: 68%;
+          max-width: none;
+          padding: 0;
+          border-radius: 50%;
+          font-size: 9px;
+          font-weight: 700;
+        }
       }
 
       .zone-bottle:hover {
@@ -5483,32 +5552,7 @@ CabinetGrid.styles = [
         }
       }
 
-      /* Touch: grid cells grow with the cabinet (see .cabinets-row in
-         wine-cellar-card.ts); bin bottles and the tappable title have fixed
-         sizes, so they're raised here. */
-      @media (pointer: coarse) {
-        .row {
-          gap: 3px;
-          margin-bottom: 3px;
-        }
-        .cabinet-name.clickable {
-          padding: 12px 0;
-        }
-        .zone-bottle {
-          width: 40px;
-          height: 40px;
-          font-size: 10px;
-        }
-        .bottom-zone {
-          gap: 8px;
-          min-height: 56px;
-        }
-        .zone-box-row {
-          padding: 8px;
-        }
-      }
     `,
-    touchStyles,
 ];
 __decorate([
     n$1({ attribute: false })
@@ -5531,9 +5575,6 @@ __decorate([
 __decorate([
     n$1({ type: String })
 ], CabinetGrid.prototype, "dispositionDisplay", void 0);
-__decorate([
-    n$1({ type: Boolean, reflect: true })
-], CabinetGrid.prototype, "single", void 0);
 __decorate([
     r$1()
 ], CabinetGrid.prototype, "_dragOverCell", void 0);
@@ -6157,7 +6198,9 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
             peak_window: this.wine.peak_window || "",
             notes: this.wine.notes || "",
             alcohol: this.wine.alcohol || "",
-            serving_temp: this.wine.serving_temp || "",
+            // Edited in the unit Home Assistant uses (°F in a US home); see
+            // _saveFields for how an untouched value keeps its stored text.
+            serving_temp: formatServingTemp(this.wine.serving_temp, this.hass),
         };
         const windowStart = (this.wine.drink_window || "").match(/\b(?:19|20)\d{2}\b/);
         this._editDrinkFrom = windowStart ? windowStart[0] : "";
@@ -6217,6 +6260,11 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
                 updates.retail_price = null;
             else
                 updates.retail_price = parseFloat(updates.retail_price) || null;
+            // The field showed the stored °C value converted for display; if it
+            // wasn't touched, keep the stored text rather than rewriting it.
+            if (updates.serving_temp === formatServingTemp(this.wine.serving_temp, this.hass)) {
+                updates.serving_temp = this.wine.serving_temp || "";
+            }
             if (this.mode === "buylist") {
                 await this.hass.callWS({
                     type: "wine_cellar/update_buy_list_item",
@@ -6843,7 +6891,7 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
           </div>
           <div class="form-group">
             <label>${this._t("ui.wineDetail.servingTempLabel")}</label>
-            <input type="text" .value=${d.serving_temp} placeholder="${this._t('ui.wineDetail.servingTempPlaceholder')}"
+            <input type="text" .value=${d.serving_temp} placeholder="${this._t(usesFahrenheit(this.hass) ? 'ui.wineDetail.servingTempPlaceholderF' : 'ui.wineDetail.servingTempPlaceholder')}"
               @input=${(e) => this._updateEditField("serving_temp", e.target.value)} />
           </div>
         </div>
@@ -7010,10 +7058,6 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
           ${!this._editingFields && (this.mode === "cellar" || this.mode === "buylist")
             ? b$1 `
                 <div class="actions grouped">
-                  ${this.mode === "cellar"
-                ? b$1 `<button class="btn btn-primary drink-btn" style="background:#722F37"
-                        @click=${this._onDrink}>🍷 ${this._t("ui.wineDetail.drinkBtn")}</button>`
-                : A$1}
                   <div class="action-cards">
                     <div class="action-card">
                       <button class="btn btn-primary" style="background:#8e24aa"
@@ -7043,6 +7087,10 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
                         @click=${this._onRemove}>✕ ${this._t("ui.wineDetail.removeBtn")}</button>
                     </div>
                   </div>
+                  ${this.mode === "cellar"
+                ? b$1 `<button class="btn btn-primary drink-btn" style="background:#722F37"
+                        @click=${this._onDrink}>🍷 ${this._t("ui.wineDetail.drinkBtn")}</button>`
+                : A$1}
                 </div>
                 ${wine.vivino_checked_at || wine.ai_checked_at || wine.vivino_updated_at || wine.ai_updated_at
                 ? b$1 `
@@ -7111,7 +7159,7 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
                     ? b$1 `<span class="info-chip"><span class="info-chip-icon">%</span> ${wine.alcohol}</span>`
                     : A$1}
                         ${wine.serving_temp
-                    ? b$1 `<span class="info-chip"><span class="info-chip-icon">🌡️</span> ${wine.serving_temp}</span>`
+                    ? b$1 `<span class="info-chip"><span class="info-chip-icon">🌡️</span> ${formatServingTemp(wine.serving_temp, this.hass)}</span>`
                     : A$1}
                         ${wine.food_pairings
                     ? this._splitPairings(wine.food_pairings).map((food) => b$1 `<span class="info-chip">${food}</span>`)
@@ -7891,9 +7939,9 @@ WineDetailDialog.styles = [
         white-space: nowrap;
       }
 
-      /* Bottle actions: a big Drink button on its own, then two cards —
-         look-up (Vivino/AI, label photo) and manage (copy/move/unassign/
-         remove) — so the everyday action isn't lost among the rest. */
+      /* Bottle actions: two cards — look-up (Vivino/AI, label photo) and
+         manage (copy/move/unassign/remove) — then a big Drink button on its
+         own below them, so the everyday action isn't lost among the rest. */
       .actions.grouped {
         flex-direction: column;
         align-items: stretch;
@@ -21027,7 +21075,6 @@ let WineCellarCard = class WineCellarCard extends i$1 {
                     .filter((c) => c.id === this._activeTab)
                     .map((cab) => b$1 `
                           <cabinet-grid
-                            single
                             .hass=${this.hass}
                             .cabinet=${cab}
                             .wines=${this._getCabinetWines(cab.id)}
@@ -22423,9 +22470,29 @@ WineCellarCard.styles = [
       @media (max-width: 599px) {
         .header-row {
           padding: 12px 12px 6px;
+          flex-wrap: wrap;
+          gap: 8px;
         }
         .title {
           font-size: 1.1em;
+        }
+        /* The header buttons get their own row under the title, sharing it
+           equally, instead of wrapping into a stack beside it. The
+           !important beats the buttons' inline padding/font-size. */
+        .header-actions {
+          flex: 1 1 100%;
+          flex-wrap: nowrap;
+        }
+        .header-actions .btn {
+          flex: 1 1 0;
+          min-width: 0;
+          padding: 6px 4px !important;
+          font-size: 0.8em !important;
+          justify-content: center;
+          text-align: center;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .stats-bar {
           flex-wrap: wrap;
@@ -22464,14 +22531,10 @@ WineCellarCard.styles = [
         }
       }
 
-      /* Touch: a bottle's size is its cabinet's width divided by its column
-         count, so fewer, wider cabinets per row is what makes the cells big
-         enough to tap. Declared after the width queries above so it wins. */
+      /* Touch: finger-sized header and list controls. Rack sizing is left
+         to the width queries above — forcing wider cabinets here made every
+         bottle far too large on a tablet. */
       @media (pointer: coarse) {
-        .cabinets-row {
-          grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
-          gap: 16px;
-        }
         .stat-action {
           display: inline-flex;
           align-items: center;
