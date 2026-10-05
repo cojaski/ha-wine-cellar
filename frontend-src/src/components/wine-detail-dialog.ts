@@ -532,9 +532,9 @@ export class WineDetailDialog extends LitElement {
         white-space: nowrap;
       }
 
-      /* Bottle actions: a big Drink button on its own, then two cards —
-         look-up (Vivino/AI, label photo) and manage (copy/move/unassign/
-         remove) — so the everyday action isn't lost among the rest. */
+      /* Bottle actions: two cards — look-up (Vivino/AI, label photo) and
+         manage (copy/move/unassign/remove) — then a big Drink button on its
+         own below them, so the everyday action isn't lost among the rest. */
       .actions.grouped {
         flex-direction: column;
         align-items: stretch;
@@ -1590,10 +1590,6 @@ export class WineDetailDialog extends LitElement {
           ${!this._editingFields && (this.mode === "cellar" || this.mode === "buylist")
             ? html`
                 <div class="actions grouped">
-                  ${this.mode === "cellar"
-                    ? html`<button class="btn btn-primary drink-btn" style="background:#722F37"
-                        @click=${this._onDrink}>🍷 ${this._t("ui.wineDetail.drinkBtn")}</button>`
-                    : nothing}
                   <div class="action-cards">
                     <div class="action-card">
                       <button class="btn btn-primary" style="background:#8e24aa"
@@ -1623,6 +1619,10 @@ export class WineDetailDialog extends LitElement {
                         @click=${this._onRemove}>✕ ${this._t("ui.wineDetail.removeBtn")}</button>
                     </div>
                   </div>
+                  ${this.mode === "cellar"
+                    ? html`<button class="btn btn-primary drink-btn" style="background:#722F37"
+                        @click=${this._onDrink}>🍷 ${this._t("ui.wineDetail.drinkBtn")}</button>`
+                    : nothing}
                 </div>
                 ${wine.vivino_checked_at || wine.ai_checked_at || wine.vivino_updated_at || wine.ai_updated_at
                   ? html`

@@ -3991,9 +3991,6 @@ let CabinetGrid = class CabinetGrid extends i$1 {
         // circle with no letter (green/blue/purple) — a settings-level choice,
         // not per-bottle.
         this.dispositionDisplay = "letter";
-        // Set when the card shows this rack on its own tab. The D/H/P badge then
-        // shrinks into the top-left corner so the label photo stays visible.
-        this.single = false;
         this._dragOverCell = null;
         // --- Long press (mobile move) ---
         this._longPressTimer = null;
@@ -4116,8 +4113,7 @@ let CabinetGrid = class CabinetGrid extends i$1 {
         const drinkEnd = drinkYears.length === 2 ? drinkYears[1] : drinkYears[0];
         return currentYear >= peakStart && currentYear <= drinkEnd;
     }
-    // The classic D/H/P letter badge (a "Drink"/"Hold"/"Past" pill in the
-    // single-rack view) — only in "letter" mode. In "dot" mode
+    // The "Drink"/"Hold"/"Past" pill — only in "letter" mode. In "dot" mode
     // there's no badge at all; _dispositionRingStyle below draws the status
     // as a thicker colored ring around the bottle instead, so the photo
     // stays uncovered.
@@ -4125,9 +4121,9 @@ let CabinetGrid = class CabinetGrid extends i$1 {
         if (!dispClass || this.dispositionDisplay === "dot")
             return A$1;
         const peakClass = dispClass === "drink" && this._isInOrAfterPeakWindow(wine) ? "peak" : "";
-        // Single-rack view has room for a word instead of the bare letter.
-        const text = this.single ? this._t(`ui.disposition.${dispClass}`) : disp;
-        return b$1 `<span class="${className} ${dispClass} ${peakClass}">${text}</span>`;
+        // Both are rendered; a container query picks the letter when the bottle
+        // is too small for the word (a dense rack in the all-racks view).
+        return b$1 `<span class="${className} ${dispClass} ${peakClass}"><span class="disp-word">${this._t(`ui.disposition.${dispClass}`)}</span><span class="disp-letter">${disp}</span></span>`;
     }
     // "dot" mode's ring: a thicker border colored by disposition (green/blue/
     // purple) instead of the classic centered badge — the whole point is to
@@ -5075,7 +5071,8 @@ CabinetGrid.styles = [
 
       .depth-dots {
         position: absolute;
-        bottom: 16%;
+        /* Clear of the Drink/Hold/Past pill along the bottom edge. */
+        bottom: 26%;
         left: 50%;
         transform: translateX(-50%);
         display: flex;
@@ -5130,6 +5127,8 @@ CabinetGrid.styles = [
         position: relative;
         width: 28px;
         height: 28px;
+        /* Sizes its Drink/Hold/Past pill (cqi) like a rack cell's. */
+        container-type: inline-size;
         border-radius: 4px;
         display: flex;
         align-items: center;
@@ -5163,12 +5162,12 @@ CabinetGrid.styles = [
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
       }
 
-      /* Single-rack view: a short text pill ("Drink"/"Hold"/"Past") along
-         the bottom edge instead of covering the middle of the label. Same
-         colors as the badge; only the shape and position change. */
-      :host([single]) .cell .disposition,
-      :host([single]) .zone-bottle .disposition,
-      :host([single]) .zone-shelf-dot .disposition {
+      /* A short text pill ("Drink"/"Hold"/"Past") along the bottom edge
+         instead of a letter covering the middle of the label. Same colors
+         as the badge; only the shape and position change. */
+      .cell .disposition,
+      .zone-bottle .disposition,
+      .zone-shelf-dot .disposition {
         top: auto;
         bottom: 4%;
         left: 50%;
@@ -5186,9 +5185,32 @@ CabinetGrid.styles = [
         text-overflow: ellipsis;
       }
 
-      /* Lift the depth dots clear of the pill. */
-      :host([single]) .depth-dots {
-        bottom: 26%;
+      .disposition .disp-letter {
+        display: none;
+      }
+
+      /* Too small for a word: back to the round letter badge. */
+      @container (max-width: 25px) {
+        .disposition .disp-word {
+          display: none;
+        }
+        .disposition .disp-letter {
+          display: inline;
+        }
+        .cell .disposition,
+        .zone-bottle .disposition,
+        .zone-shelf-dot .disposition {
+          bottom: auto;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          width: 68%;
+          height: 68%;
+          max-width: none;
+          padding: 0;
+          border-radius: 50%;
+          font-size: 9px;
+          font-weight: 700;
+        }
       }
 
       .zone-bottle:hover {
@@ -5553,9 +5575,6 @@ __decorate([
 __decorate([
     n$1({ type: String })
 ], CabinetGrid.prototype, "dispositionDisplay", void 0);
-__decorate([
-    n$1({ type: Boolean, reflect: true })
-], CabinetGrid.prototype, "single", void 0);
 __decorate([
     r$1()
 ], CabinetGrid.prototype, "_dragOverCell", void 0);
@@ -7039,10 +7058,6 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
           ${!this._editingFields && (this.mode === "cellar" || this.mode === "buylist")
             ? b$1 `
                 <div class="actions grouped">
-                  ${this.mode === "cellar"
-                ? b$1 `<button class="btn btn-primary drink-btn" style="background:#722F37"
-                        @click=${this._onDrink}>🍷 ${this._t("ui.wineDetail.drinkBtn")}</button>`
-                : A$1}
                   <div class="action-cards">
                     <div class="action-card">
                       <button class="btn btn-primary" style="background:#8e24aa"
@@ -7072,6 +7087,10 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
                         @click=${this._onRemove}>✕ ${this._t("ui.wineDetail.removeBtn")}</button>
                     </div>
                   </div>
+                  ${this.mode === "cellar"
+                ? b$1 `<button class="btn btn-primary drink-btn" style="background:#722F37"
+                        @click=${this._onDrink}>🍷 ${this._t("ui.wineDetail.drinkBtn")}</button>`
+                : A$1}
                 </div>
                 ${wine.vivino_checked_at || wine.ai_checked_at || wine.vivino_updated_at || wine.ai_updated_at
                 ? b$1 `
@@ -7920,9 +7939,9 @@ WineDetailDialog.styles = [
         white-space: nowrap;
       }
 
-      /* Bottle actions: a big Drink button on its own, then two cards —
-         look-up (Vivino/AI, label photo) and manage (copy/move/unassign/
-         remove) — so the everyday action isn't lost among the rest. */
+      /* Bottle actions: two cards — look-up (Vivino/AI, label photo) and
+         manage (copy/move/unassign/remove) — then a big Drink button on its
+         own below them, so the everyday action isn't lost among the rest. */
       .actions.grouped {
         flex-direction: column;
         align-items: stretch;
@@ -21056,7 +21075,6 @@ let WineCellarCard = class WineCellarCard extends i$1 {
                     .filter((c) => c.id === this._activeTab)
                     .map((cab) => b$1 `
                           <cabinet-grid
-                            single
                             .hass=${this.hass}
                             .cabinet=${cab}
                             .wines=${this._getCabinetWines(cab.id)}
