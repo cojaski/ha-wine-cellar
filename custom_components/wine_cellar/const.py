@@ -115,6 +115,11 @@ DISPOSITION_DISPLAY_DOT = "dot"
 DISPOSITION_DISPLAY_CHOICES = [DISPOSITION_DISPLAY_LETTER, DISPOSITION_DISPLAY_DOT]
 DEFAULT_DISPOSITION_DISPLAY = DISPOSITION_DISPLAY_LETTER
 
+# The card's own background picture, uploaded from Settings: the URL of a
+# file under the photo directory (see photos.store_background), or absent for
+# the theme's own background.
+CONF_CARD_BACKGROUND = "card_background"
+
 # How many timestamped server backups to keep on disk. Older ones are pruned
 # after each new save; 0 keeps every backup forever.
 # Arrangement findings the user has waved off for good. Kept as a list of
@@ -162,4 +167,4 @@ DEFAULT_CHAMBERING_EQUILIBRATION_HOURS = 24
 ATTR_TOTAL_BOTTLES = "total_bottles"
 ATTR_TOTAL_CAPACITY = "total_capacity"
 
-FRONTEND_VERSION = "20261004w"
+FRONTEND_VERSION = "20261005a"

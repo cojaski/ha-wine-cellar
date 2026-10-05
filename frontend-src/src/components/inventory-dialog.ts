@@ -368,10 +368,13 @@ export class InventoryDialog extends LitElement {
         pointer-events: none;
       }
 
+      /* Sort, direction and Filters stay on the right, also when the row
+         wraps under the search box. */
       .inv-sort {
         display: flex;
         gap: 4px;
         align-items: center;
+        margin-left: auto;
       }
 
       /* One height for the whole sort row. The select drops its native
@@ -641,6 +644,7 @@ export class InventoryDialog extends LitElement {
 
       .inv-chips {
         display: flex;
+        justify-content: flex-end;
         gap: 6px;
         padding: 0 16px 10px;
         flex-wrap: wrap;
@@ -1005,6 +1009,9 @@ export class InventoryDialog extends LitElement {
         }
         .inv-search-wrapper {
           width: 100%;
+        }
+        .inv-sort {
+          align-self: flex-end;
         }
         .inv-stats {
           gap: 8px;

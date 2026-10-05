@@ -119,36 +119,12 @@ export const sharedStyles = css`
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 3px 10px rgba(114, 47, 55, 0.35);
   }
 
+  /* Manage Racks and Settings look like the other tabs; they're only
+     pushed to the right end of the bar. Settings sits right after Manage
+     Racks with the bar's normal gap — no margin-left: auto of its own, or
+     it would claim the remaining space and drift away from it. */
   .manage-racks-btn {
     margin-left: auto;
-    border-color: transparent;
-    background: transparent;
-    box-shadow: none;
-    color: var(--wc-primary-text);
-    font-weight: 500;
-    font-size: 0.8em;
-    padding: 6px 12px;
-  }
-
-  .manage-racks-btn:hover {
-    background: var(--wc-hover);
-  }
-
-  /* Sits right after .manage-racks-btn with the tab-bar's normal gap — no
-     margin-left: auto of its own, or it would claim the remaining space and
-     drift away from it instead of staying grouped together. */
-  .settings-tab-btn {
-    border-color: transparent;
-    background: transparent;
-    box-shadow: none;
-    color: var(--wc-primary-text);
-    font-weight: 500;
-    font-size: 0.8em;
-    padding: 6px 12px;
-  }
-
-  .settings-tab-btn:hover {
-    background: var(--wc-hover);
   }
 
   .btn {
@@ -898,8 +874,7 @@ export const touchStyles = css`
    Whisky), shared by the card's search bar and the Inventory dialog so both
    rows look the same. Each chip takes its colour from the inline custom
    properties typeChipStyle() (models.ts) sets: tinted at rest, filled with
-   its own colour when selected. "All" has no type colour and shows a dot of
-   every type instead. */
+   its own colour when selected. */
 export const typeChipStyles = css`
   .type-chip {
     --chip-color: #722f37;
@@ -909,7 +884,7 @@ export const typeChipStyles = css`
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 5px 12px 5px 9px;
+    padding: 5px 12px;
     border-radius: 999px;
     border: 1px solid var(--wc-border);
     background: linear-gradient(var(--chip-tint), var(--chip-tint)), var(--wc-field-bg);
@@ -920,21 +895,6 @@ export const typeChipStyles = css`
     font-weight: 500;
     white-space: nowrap;
     transition: background 0.2s, box-shadow 0.2s, color 0.2s, transform 0.15s;
-  }
-
-  .type-chip::before {
-    content: "";
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    background: var(--chip-color);
-    /* Keeps the pale swatches (white, sparkling) visible on a light glass. */
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
-  }
-
-  .type-chip.all::before {
-    background: conic-gradient(#722f37 0 20%, #f5e6ca 0 40%, #e8a0bf 0 60%, #d4e09b 0 80%, #daa520 0);
   }
 
   .type-chip:hover {
@@ -953,19 +913,7 @@ export const typeChipStyles = css`
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 3px 12px var(--chip-glow);
   }
 
-  .type-chip.active::before {
-    background: var(--chip-ink);
-    box-shadow: none;
-    opacity: 0.8;
-  }
-
   .type-chip.all.active {
     background: var(--wc-primary-grad);
-  }
-
-  .type-chip.all.active::before {
-    background: conic-gradient(#722f37 0 20%, #f5e6ca 0 40%, #e8a0bf 0 60%, #d4e09b 0 80%, #daa520 0);
-    box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.85);
-    opacity: 1;
   }
 `;

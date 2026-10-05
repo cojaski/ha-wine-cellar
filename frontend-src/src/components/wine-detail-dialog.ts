@@ -71,23 +71,6 @@ export class WineDetailDialog extends LitElement {
         padding: 12px 56px 0 12px;
       }
 
-      .icon-btn {
-        background: none;
-        border: none;
-        cursor: pointer;
-        font-size: 1.1em;
-        padding: 6px 8px;
-        border-radius: 6px;
-        color: var(--wc-text-secondary);
-        transition: background 0.2s;
-        line-height: 1;
-      }
-
-      .icon-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
-      }
-
-
       .wine-header {
         display: flex;
         gap: 16px;
@@ -531,9 +514,10 @@ export class WineDetailDialog extends LitElement {
         white-space: nowrap;
       }
 
-      /* Bottle actions: two cards — look-up (Vivino/AI, label photo) and
-         manage (copy/move/unassign/remove) — then a big Drink button on its
-         own below them, so the everyday action isn't lost among the rest. */
+      /* Bottle actions: two cards — look-up (Vivino/AI, label photo, edit)
+         and manage (copy/move/unassign/remove) — then a big Drink button in
+         its own card below them, so the everyday action isn't lost among
+         the rest. */
       .actions.grouped {
         flex-direction: column;
         align-items: stretch;
@@ -559,6 +543,8 @@ export class WineDetailDialog extends LitElement {
       }
 
       .actions .btn.drink-btn {
+        flex: 1;
+        justify-content: center;
         font-size: 1.05em;
         font-weight: 600;
         padding: 12px 16px;
@@ -1495,11 +1481,7 @@ export class WineDetailDialog extends LitElement {
       <div class="dialog-overlay" @click=${this._close}>
         <div class="dialog" style="position:relative" @click=${(e: Event) => e.stopPropagation()}>
           ${dialogClose(this._close, this._t('ui.common.close'))}
-          <div class="dialog-top-bar">
-            ${this.mode !== "winelist"
-              ? html`<button class="icon-btn" title="${this._t('ui.common.edit')}" @click=${this._startEditingFields}>✏️</button>`
-              : nothing}
-          </div>
+          <div class="dialog-top-bar"></div>
           <div class="wine-header">
             <div class="wine-image-col">
               <div
@@ -1527,7 +1509,7 @@ export class WineDetailDialog extends LitElement {
                     @click=${() => (this._photoSide = "back")}
                   ></span>
                 </div>
-                ${this.mode !== "winelist"
+                ${this.mode !== "winelist" && this._editingFields
                   ? html`
                       <div class="photo-actions">
                         <button
@@ -1625,6 +1607,8 @@ export class WineDetailDialog extends LitElement {
                             ${this._scanningLabel ? "..." : `📷 ${this._t("ui.wineDetail.scanLabelBtn")}`}
                           </button>`
                         : nothing}
+                      <button class="btn btn-primary" style="background:#455a64"
+                        @click=${this._startEditingFields}>✏️ ${this._t("ui.common.edit")}</button>
                     </div>
                     <div class="action-card">
                       ${this.mode === "cellar"
@@ -1641,8 +1625,10 @@ export class WineDetailDialog extends LitElement {
                     </div>
                   </div>
                   ${this.mode === "cellar"
-                    ? html`<button class="btn btn-primary drink-btn" style="background:#722F37"
-                        @click=${this._onDrink}>🍷 ${this._t("ui.wineDetail.drinkBtn")}</button>`
+                    ? html`<div class="action-card">
+                        <button class="btn btn-primary drink-btn" style="background:#722F37"
+                          @click=${this._onDrink}>🍷 ${this._t("ui.wineDetail.drinkBtn")}</button>
+                      </div>`
                     : nothing}
                 </div>
                 ${wine.vivino_checked_at || wine.ai_checked_at || wine.vivino_updated_at || wine.ai_updated_at

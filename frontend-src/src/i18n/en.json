@@ -696,7 +696,12 @@
       "aiDispositionInfo": "{drinkNow} / {hold} / {pastPeak} + {window}",
       "drinkingWindow": "drinking window",
       "aiGrapeInfo": "Grape variety, region, country, type — only when scanning a label photo, not on a refresh",
-      "infoNote": "AI never provides a photo, a Vivino community rating, or food pairings — when Vivino can't find a confident match, AI fills in what it can (mainly price, description, and critic scores), not everything Vivino would have."
+      "infoNote": "AI never provides a photo, a Vivino community rating, or food pairings — when Vivino can't find a confident match, AI fills in what it can (mainly price, description, and critic scores), not everything Vivino would have.",
+      "cardBackgroundLabel": "Card background",
+      "cardBackgroundTheme": "Theme default",
+      "cardBackgroundUpload": "Upload photo",
+      "cardBackgroundChange": "Change",
+      "cardBackgroundRemove": "Remove"
     },
     "camera": {
       "blockedInsecure": "The live camera needs a secure connection. Home Assistant is being served over http://, and browsers only allow camera access over https:// (or on localhost).",
@@ -820,6 +825,7 @@
     "moveToCellarFailed": "Failed to move to cellar",
     "tapToMove": "Tap a cell to move \"{name}\"",
     "wineDrunk": "Cheers! {name} is now in History",
-    "removeWineFailed": "Failed to remove wine"
+    "removeWineFailed": "Failed to remove wine",
+    "changeCardBackgroundFailed": "Failed to change the card background"
   }
 }

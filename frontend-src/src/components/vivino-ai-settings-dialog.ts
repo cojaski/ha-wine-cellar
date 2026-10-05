@@ -16,6 +16,7 @@ export class VivinoAiSettingsDialog extends LitElement {
   @property({ attribute: false }) supportedLanguages: string[] = ["en", "fr", "de"];
   @property({ type: String }) metadataCurrency = "USD";
   @property({ attribute: false }) supportedCurrencies: string[] = ["USD", "EUR", "GBP", "CHF"];
+  @property({ type: String }) cardBackground: string | null = null;
 
   static styles = [
     sharedStyles,
@@ -53,10 +54,20 @@ export class VivinoAiSettingsDialog extends LitElement {
         font-size: 0.9em;
       }
 
+      /* Same selected look as the tabs and type chips. */
       .pill.active {
-        background: var(--wc-primary-text);
+        background: var(--wc-primary-grad);
         color: #fff;
-        border-color: var(--wc-primary-text);
+        border-color: transparent;
+      }
+
+      .bg-thumb {
+        width: 44px;
+        height: 30px;
+        border-radius: 6px;
+        border: 1px solid var(--wc-border);
+        background: var(--wc-field-bg) center / cover no-repeat;
+        flex-shrink: 0;
       }
 
       .settings-select {
@@ -152,6 +163,19 @@ export class VivinoAiSettingsDialog extends LitElement {
     this.dispatchEvent(new CustomEvent("set-metadata-language", { detail: { value: lang } }));
   }
 
+  // Hands the picked file over as a data URL; the card resizes and uploads it.
+  private _onBackgroundPicked(e: Event) {
+    const input = e.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.dispatchEvent(new CustomEvent("set-card-background", { detail: { value: reader.result as string } }));
+    };
+    reader.readAsDataURL(file);
+  }
+
   private _setCurrency(currency: string) {
     this.dispatchEvent(new CustomEvent("set-metadata-currency", { detail: { value: currency } }));
   }
@@ -201,6 +225,24 @@ export class VivinoAiSettingsDialog extends LitElement {
                 class="pill ${this.dispositionDisplay === "dot" ? "active" : ""}"
                 @click=${() => this._setDispositionDisplay("dot")}
               >${this._t("ui.vivinoAiSettings.dispositionDisplayDot")}</button>
+            </div>
+          </div>
+
+          <div class="settings-row">
+            <span class="settings-label">${this._t("ui.vivinoAiSettings.cardBackgroundLabel")}</span>
+            <div class="pill-group" style="align-items:center">
+              ${this.cardBackground
+                ? html`<span class="bg-thumb" style="background-image:url('${this.cardBackground}')"></span>`
+                : html`<span style="color:var(--wc-text-secondary);font-size:0.9em">${this._t("ui.vivinoAiSettings.cardBackgroundTheme")}</span>`}
+              <label class="pill" style="display:inline-flex;align-items:center">
+                ${this.cardBackground ? this._t("ui.vivinoAiSettings.cardBackgroundChange") : this._t("ui.vivinoAiSettings.cardBackgroundUpload")}
+                <input type="file" accept="image/*" hidden @change=${this._onBackgroundPicked} />
+              </label>
+              ${this.cardBackground
+                ? html`<button class="pill" @click=${() => this.dispatchEvent(new CustomEvent("set-card-background", { detail: { value: null } }))}>
+                    ${this._t("ui.vivinoAiSettings.cardBackgroundRemove")}
+                  </button>`
+                : nothing}
             </div>
           </div>
 
