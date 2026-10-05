@@ -97,6 +97,50 @@ async def store_data_url(
     return f"{PHOTO_URL_PREFIX}/{filename}"
 
 
+BACKGROUND_SUBDIR = "backgrounds"
+
+
+def _clear_backgrounds(directory: Path, keep: str | None) -> None:
+    if not directory.is_dir():
+        return
+    for path in directory.iterdir():
+        if path.is_file() and path.name != keep:
+            try:
+                path.unlink()
+            except OSError:
+                continue
+
+
+async def store_background(hass: HomeAssistant, data_url: str | None) -> str | None:
+    """Save the card background and return its URL; None clears it.
+
+    Kept in a subdirectory so prune(), which only looks at the files
+    directly in the photo directory, never mistakes it for an orphaned
+    bottle photo. Only one background exists at a time: the previous one is
+    deleted once the new one is written.
+    """
+    directory = photo_dir(hass) / BACKGROUND_SUBDIR
+    if not data_url:
+        await hass.async_add_executor_job(_clear_backgrounds, directory, None)
+        return None
+    match = _DATA_URL_RE.match(data_url)
+    if not match:
+        return None
+    try:
+        raw = base64.b64decode(match.group("payload"), validate=True)
+    except (binascii.Error, ValueError) as err:
+        _LOGGER.warning("Could not decode card background: %s", err)
+        return None
+    if not raw:
+        return None
+    fmt = match.group("fmt").lower()
+    ext = "jpg" if fmt in ("jpeg", "jpg") else re.sub(r"[^a-z0-9]", "", fmt) or "img"
+    filename = f"background-{int(time.time() * 1000)}.{ext}"
+    await hass.async_add_executor_job(_write, directory, filename, raw)
+    await hass.async_add_executor_job(_clear_backgrounds, directory, filename)
+    return f"{PHOTO_URL_PREFIX}/{BACKGROUND_SUBDIR}/{filename}"
+
+
 async def store_wine_photos(hass: HomeAssistant, wine: dict[str, Any]) -> bool:
     """Move any inline photo on a wine record out to disk. True if changed."""
     changed = False

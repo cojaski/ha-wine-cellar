@@ -696,7 +696,12 @@
       "aiDispositionInfo": "{drinkNow} / {hold} / {pastPeak} + {window}",
       "drinkingWindow": "fenêtre de dégustation",
       "aiGrapeInfo": "Cépage, région, pays, type — uniquement lors du scan d'une photo d'étiquette, pas lors d'une actualisation",
-      "infoNote": "L'IA ne fournit jamais de photo, de note de la communauté Vivino, ni d'accords mets-vins — quand Vivino ne trouve pas de correspondance fiable, l'IA complète ce qu'elle peut (surtout le prix, la description et les notes des critiques), pas tout ce que Vivino aurait fourni."
+      "infoNote": "L'IA ne fournit jamais de photo, de note de la communauté Vivino, ni d'accords mets-vins — quand Vivino ne trouve pas de correspondance fiable, l'IA complète ce qu'elle peut (surtout le prix, la description et les notes des critiques), pas tout ce que Vivino aurait fourni.",
+      "cardBackgroundLabel": "Arrière-plan de la carte",
+      "cardBackgroundTheme": "Thème par défaut",
+      "cardBackgroundUpload": "Importer une photo",
+      "cardBackgroundChange": "Changer",
+      "cardBackgroundRemove": "Retirer"
     },
     "camera": {
       "blockedInsecure": "La caméra en direct nécessite une connexion sécurisée. Home Assistant est servi en http://, et les navigateurs n'autorisent l'accès à la caméra qu'en https:// (ou sur localhost).",
@@ -820,6 +825,7 @@
     "moveToCellarFailed": "Échec du déplacement vers la cave",
     "tapToMove": "Touchez une case pour déplacer « {name} »",
     "wineDrunk": "Santé ! {name} est maintenant dans l'Historique",
-    "removeWineFailed": "Échec du retrait du vin"
+    "removeWineFailed": "Échec du retrait du vin",
+    "changeCardBackgroundFailed": "Échec du changement d'arrière-plan"
   }
 }

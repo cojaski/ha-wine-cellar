@@ -20,6 +20,7 @@ from .const import (
     CONF_CHAMBERING_TIME_CONSTANT_MINUTES,
     CONF_CHAMBERING_ROOM_SENSOR,
     CONF_DEFAULT_WINE_TYPE,
+    CONF_CARD_BACKGROUND,
     CONF_DISMISSED_ARRANGEMENTS,
     CONF_DISPOSITION_DISPLAY,
     CONF_ENABLE_WHISKY,
@@ -714,6 +715,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_recognize_label)
     websocket_api.async_register_command(hass, ws_get_capabilities)
     websocket_api.async_register_command(hass, ws_update_settings)
+    websocket_api.async_register_command(hass, ws_set_card_background)
     websocket_api.async_register_command(hass, ws_analyze_wines)
     websocket_api.async_register_command(hass, ws_refresh_wine)
     websocket_api.async_register_command(hass, ws_analyze_single_wine)
@@ -1291,6 +1293,7 @@ def ws_get_capabilities(
             "chambering_room_sensor": _get_chambering_room_sensor(hass),
             "chambering_time_constant_minutes": _get_chambering_time_constant_minutes(hass),
             "chambering_equilibration_hours": _get_chambering_equilibration_hours(hass),
+            "card_background": hass.data[DOMAIN]["storage"].settings.get(CONF_CARD_BACKGROUND),
         },
     )
 
@@ -1351,9 +1354,35 @@ async def ws_update_settings(
         # Deduplicate and cap: this list only ever grows, and a finding id the
         # cellar can no longer produce would otherwise sit there forever.
         updates[CONF_DISMISSED_ARRANGEMENTS] = list(dict.fromkeys(dismissed))[-500:]
+    # Only set_card_background may change this: it owns the file on disk.
+    updates.pop(CONF_CARD_BACKGROUND, None)
     settings = storage.update_settings(updates)
     await storage.async_save()
     connection.send_result(msg["id"], {"settings": settings})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "wine_cellar/set_card_background",
+        vol.Optional("image"): vol.Any(str, None),
+    }
+)
+@websocket_api.async_response
+async def ws_set_card_background(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Upload (image = data URL) or clear (no image) the card background."""
+    storage = hass.data[DOMAIN]["storage"]
+    image = msg.get("image")
+    url = await photos.store_background(hass, image)
+    if image and not url:
+        connection.send_error(msg["id"], "invalid_image", "Could not read that image")
+        return
+    storage.update_settings({CONF_CARD_BACKGROUND: url})
+    await storage.async_save()
+    connection.send_result(msg["id"], {"card_background": url})
 
 
 @websocket_api.websocket_command(

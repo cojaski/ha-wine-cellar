@@ -178,6 +178,7 @@
               chambering_room_sensor: "sensor.salon_temp",
               chambering_time_constant_minutes: 75,
               chambering_equilibration_hours: 24,
+              card_background: mockSettings.card_background || null,
             };
           case "wine_cellar/lookup_barcode":
             return { result: { name: "Test Wine", winery: "Test Winery", region: "Test Region", country: "France", vintage: 2020, type: "red", grape_variety: "Merlot", rating: 4.0, ratings_count: 500, image_url: "https://images.vivino.com/thumbs/ApnxEJsiSaCuFadP5WMFKQ_375x500.jpg", price: 30, description: "A rich, full-bodied red.", food_pairings: "Beef, Pasta", alcohol: "13.5%", source: "mock" }, cached: false };
@@ -328,6 +329,11 @@
                 { name: "Barolo Monfortino 2016", winery: "Giacomo Conterno", region: "Piedmont", country: "Italy", vintage: 2016, type: "red", grape_variety: "Nebbiolo", price: 450 },
               ],
             };
+          case "wine_cellar/set_card_background":
+            // The real backend stores the file and returns its URL; the
+            // data URL itself works just as well for the preview.
+            mockSettings.card_background = msg.image || null;
+            return { card_background: mockSettings.card_background };
           case "wine_cellar/update_settings":
             if (msg.updates && msg.updates.server_backup_keep !== undefined) {
               mockBackupKeep = msg.updates.server_backup_keep;

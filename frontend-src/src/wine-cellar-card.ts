@@ -3,6 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { sharedStyles, touchStyles, closeIcon } from "./styles";
 import { Wine, Cabinet, CellarStats, WINE_TYPE_COLORS, WineType, StorageRow, StorageRowType, BOX_SIZES, getRackSlots, getWineLocation, getShelfSlotGroups, ShelfSlotGroup, getSteppedSlotGroups, SteppedSlotGroup } from "./models";
 import { t } from "./i18n";
+import { resizeImageForStorage } from "./utils/image";
 import { matchesQuery } from "./utils/search";
 import { Finding, analyzeArrangement } from "./utils/arrange";
 
@@ -90,6 +91,7 @@ export class WineCellarCard extends LitElement {
   @state() private _enableWhisky = false;
   @state() private _defaultWineType: WineType = "red";
   @state() private _dispositionDisplay: "letter" | "dot" = "letter";
+  @state() private _cardBackground: string | null = null;
   @state() private _chamberingRoomSensor = "";
   @state() private _chamberingTimeConstantMinutes = 75;
   @state() private _chamberingEquilibrationHours = 24;
@@ -166,6 +168,7 @@ export class WineCellarCard extends LitElement {
          glass-dark is set by _syncGlassMode() from the theme's text colour. */
       :host {
         display: block;
+        --wc-glass-scrim: linear-gradient(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3));
         --wc-glass-surface: rgba(250, 248, 247, 0.84);
         --wc-glass-solid: #faf8f7;
         --wc-glass-field: rgba(255, 255, 255, 0.6);
@@ -175,6 +178,7 @@ export class WineCellarCard extends LitElement {
       }
 
       :host([glass-dark]) {
+        --wc-glass-scrim: linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35));
         --wc-glass-surface: rgba(32, 28, 32, 0.82);
         --wc-glass-solid: #201c20;
         --wc-glass-field: rgba(0, 0, 0, 0.28);
@@ -183,8 +187,49 @@ export class WineCellarCard extends LitElement {
         --wc-glass-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.08);
       }
 
+      /* clip, not hidden: hidden would make the card a scroll container and
+         pin .card-bg's sticky positioning to the card instead of the page. */
       ha-card {
+        overflow: clip;
+        isolation: isolate;
+      }
+
+      /* The card paints its own background, one screen tall, sticking to
+         the viewport while the card scrolls past. A glass theme otherwise
+         shows the dashboard wallpaper through a transparent card, and how
+         that wallpaper lands depends on how tall the card is — so All
+         Sections (tall) and a single rack (short) looked different.
+         Default: the theme's own wallpaper, blurred like the theme's frosted
+         cards; with no wallpaper this is empty and nothing changes. A
+         background uploaded in Settings replaces it (.custom). */
+      .card-bg {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        margin-bottom: -100vh;
+        z-index: -1;
+        pointer-events: none;
         overflow: hidden;
+        border-radius: inherit;
+      }
+
+      .card-bg::before {
+        content: "";
+        position: absolute;
+        inset: -24px;
+        background: var(--lovelace-background, var(--background-image, none));
+        background-size: cover;
+        background-position: center;
+        /* The theme's "fixed" would size the picture to the viewport on some
+           browsers and to the whole page on others (iOS ignores fixed). */
+        background-attachment: scroll;
+        filter: blur(8px) saturate(1.25);
+      }
+
+      .card-bg.custom::before {
+        inset: 0;
+        background: var(--wc-glass-scrim), var(--wc-card-bg-image) center / cover no-repeat;
+        filter: none;
       }
 
       /* Pending Vivino removals: pick-a-bottle panel */
@@ -774,6 +819,7 @@ export class WineCellarCard extends LitElement {
       this._enableWhisky = capResult?.enable_whisky || false;
       this._defaultWineType = capResult?.default_wine_type || "red";
       this._dispositionDisplay = capResult?.disposition_display || "letter";
+      this._cardBackground = capResult?.card_background || null;
       this._chamberingRoomSensor = capResult?.chambering_room_sensor || "";
       this._chamberingTimeConstantMinutes = capResult?.chambering_time_constant_minutes ?? 75;
       this._chamberingEquilibrationHours = capResult?.chambering_equilibration_hours ?? 24;
@@ -2320,6 +2366,26 @@ export class WineCellarCard extends LitElement {
     }
   }
 
+  // Uploads value (a data URL straight from the file picker) or clears the
+  // background when value is null. Shrunk first: a phone photo is several MB
+  // and a card background never needs more than a screen's worth of pixels.
+  private async _setCardBackground(value: string | null) {
+    try {
+      let image: string | null = null;
+      if (value) {
+        image = await resizeImageForStorage(value.split(",", 2)[1] || "", 1920, 0.82);
+        if (!image) throw new Error("unreadable image");
+      }
+      const result = await this.hass.callWS({
+        type: "wine_cellar/set_card_background",
+        ...(image ? { image } : {}),
+      });
+      this._cardBackground = result?.card_background || null;
+    } catch (err) {
+      this._showToast(this._t("toast.changeCardBackgroundFailed"));
+    }
+  }
+
   // --- Batch Vivino Refresh ---
   private _batchRefreshVivino() {
     this._batchAiFallback = this._aiFallbackAlways;
@@ -2618,6 +2684,10 @@ export class WineCellarCard extends LitElement {
 
     return html`
       <ha-card>
+        <div
+          class="card-bg ${this._cardBackground ? "custom" : ""}"
+          style=${this._cardBackground ? `--wc-card-bg-image:url("${this._cardBackground}")` : ""}
+        ></div>
         <div class="header-row">
           <div class="title">
             <span class="title-icon">🍷</span>
@@ -2641,7 +2711,7 @@ export class WineCellarCard extends LitElement {
             ` : nothing}
             <button
               class="btn btn-primary"
-              style="font-size: 0.8em; padding: 5px 10px; background: #37474f;"
+              style="font-size: 0.8em; padding: 5px 10px; background: #5e3557;"
               @click=${() => {
                 this._inventoryPairing = false;
                 this._showInventory = true;
@@ -3388,7 +3458,9 @@ export class WineCellarCard extends LitElement {
           .supportedLanguages=${this._supportedLanguages}
           .metadataCurrency=${this._metadataCurrency}
           .supportedCurrencies=${this._supportedCurrencies}
+          .cardBackground=${this._cardBackground}
           @close=${() => (this._showVivinoAiSettings = false)}
+          @set-card-background=${(e: CustomEvent) => this._setCardBackground(e.detail.value)}
           @set-ai-fallback-always=${(e: CustomEvent) => this._setAiFallbackAlways(e.detail.value)}
           @set-enable-whisky=${(e: CustomEvent) => this._setEnableWhisky(e.detail.value)}
           @set-default-wine-type=${(e: CustomEvent) => this._setDefaultWineType(e.detail.value)}

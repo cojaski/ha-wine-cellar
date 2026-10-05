@@ -189,36 +189,12 @@ const sharedStyles = i$4 `
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 3px 10px rgba(114, 47, 55, 0.35);
   }
 
+  /* Manage Racks and Settings look like the other tabs; they're only
+     pushed to the right end of the bar. Settings sits right after Manage
+     Racks with the bar's normal gap — no margin-left: auto of its own, or
+     it would claim the remaining space and drift away from it. */
   .manage-racks-btn {
     margin-left: auto;
-    border-color: transparent;
-    background: transparent;
-    box-shadow: none;
-    color: var(--wc-primary-text);
-    font-weight: 500;
-    font-size: 0.8em;
-    padding: 6px 12px;
-  }
-
-  .manage-racks-btn:hover {
-    background: var(--wc-hover);
-  }
-
-  /* Sits right after .manage-racks-btn with the tab-bar's normal gap — no
-     margin-left: auto of its own, or it would claim the remaining space and
-     drift away from it instead of staying grouped together. */
-  .settings-tab-btn {
-    border-color: transparent;
-    background: transparent;
-    box-shadow: none;
-    color: var(--wc-primary-text);
-    font-weight: 500;
-    font-size: 0.8em;
-    padding: 6px 12px;
-  }
-
-  .settings-tab-btn:hover {
-    background: var(--wc-hover);
   }
 
   .btn {
@@ -966,8 +942,7 @@ const touchStyles = i$4 `
    Whisky), shared by the card's search bar and the Inventory dialog so both
    rows look the same. Each chip takes its colour from the inline custom
    properties typeChipStyle() (models.ts) sets: tinted at rest, filled with
-   its own colour when selected. "All" has no type colour and shows a dot of
-   every type instead. */
+   its own colour when selected. */
 const typeChipStyles = i$4 `
   .type-chip {
     --chip-color: #722f37;
@@ -977,7 +952,7 @@ const typeChipStyles = i$4 `
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 5px 12px 5px 9px;
+    padding: 5px 12px;
     border-radius: 999px;
     border: 1px solid var(--wc-border);
     background: linear-gradient(var(--chip-tint), var(--chip-tint)), var(--wc-field-bg);
@@ -988,21 +963,6 @@ const typeChipStyles = i$4 `
     font-weight: 500;
     white-space: nowrap;
     transition: background 0.2s, box-shadow 0.2s, color 0.2s, transform 0.15s;
-  }
-
-  .type-chip::before {
-    content: "";
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    background: var(--chip-color);
-    /* Keeps the pale swatches (white, sparkling) visible on a light glass. */
-    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
-  }
-
-  .type-chip.all::before {
-    background: conic-gradient(#722f37 0 20%, #f5e6ca 0 40%, #e8a0bf 0 60%, #d4e09b 0 80%, #daa520 0);
   }
 
   .type-chip:hover {
@@ -1021,20 +981,8 @@ const typeChipStyles = i$4 `
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 3px 12px var(--chip-glow);
   }
 
-  .type-chip.active::before {
-    background: var(--chip-ink);
-    box-shadow: none;
-    opacity: 0.8;
-  }
-
   .type-chip.all.active {
     background: var(--wc-primary-grad);
-  }
-
-  .type-chip.all.active::before {
-    background: conic-gradient(#722f37 0 20%, #f5e6ca 0 40%, #e8a0bf 0 60%, #d4e09b 0 80%, #daa520 0);
-    box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.85);
-    opacity: 1;
   }
 `;
 
@@ -1735,7 +1683,12 @@ var ui$1 = {
 		aiDispositionInfo: "{drinkNow} / {hold} / {pastPeak} + {window}",
 		drinkingWindow: "drinking window",
 		aiGrapeInfo: "Grape variety, region, country, type — only when scanning a label photo, not on a refresh",
-		infoNote: "AI never provides a photo, a Vivino community rating, or food pairings — when Vivino can't find a confident match, AI fills in what it can (mainly price, description, and critic scores), not everything Vivino would have."
+		infoNote: "AI never provides a photo, a Vivino community rating, or food pairings — when Vivino can't find a confident match, AI fills in what it can (mainly price, description, and critic scores), not everything Vivino would have.",
+		cardBackgroundLabel: "Card background",
+		cardBackgroundTheme: "Theme default",
+		cardBackgroundUpload: "Upload photo",
+		cardBackgroundChange: "Change",
+		cardBackgroundRemove: "Remove"
 	},
 	camera: {
 		blockedInsecure: "The live camera needs a secure connection. Home Assistant is being served over http://, and browsers only allow camera access over https:// (or on localhost).",
@@ -1859,7 +1812,8 @@ var toast$1 = {
 	moveToCellarFailed: "Failed to move to cellar",
 	tapToMove: "Tap a cell to move \"{name}\"",
 	wineDrunk: "Cheers! {name} is now in History",
-	removeWineFailed: "Failed to remove wine"
+	removeWineFailed: "Failed to remove wine",
+	changeCardBackgroundFailed: "Failed to change the card background"
 };
 var en = {
 	wineType: wineType$1,
@@ -2569,7 +2523,12 @@ var ui = {
 		aiDispositionInfo: "{drinkNow} / {hold} / {pastPeak} + {window}",
 		drinkingWindow: "fenêtre de dégustation",
 		aiGrapeInfo: "Cépage, région, pays, type — uniquement lors du scan d'une photo d'étiquette, pas lors d'une actualisation",
-		infoNote: "L'IA ne fournit jamais de photo, de note de la communauté Vivino, ni d'accords mets-vins — quand Vivino ne trouve pas de correspondance fiable, l'IA complète ce qu'elle peut (surtout le prix, la description et les notes des critiques), pas tout ce que Vivino aurait fourni."
+		infoNote: "L'IA ne fournit jamais de photo, de note de la communauté Vivino, ni d'accords mets-vins — quand Vivino ne trouve pas de correspondance fiable, l'IA complète ce qu'elle peut (surtout le prix, la description et les notes des critiques), pas tout ce que Vivino aurait fourni.",
+		cardBackgroundLabel: "Arrière-plan de la carte",
+		cardBackgroundTheme: "Thème par défaut",
+		cardBackgroundUpload: "Importer une photo",
+		cardBackgroundChange: "Changer",
+		cardBackgroundRemove: "Retirer"
 	},
 	camera: {
 		blockedInsecure: "La caméra en direct nécessite une connexion sécurisée. Home Assistant est servi en http://, et les navigateurs n'autorisent l'accès à la caméra qu'en https:// (ou sur localhost).",
@@ -2693,7 +2652,8 @@ var toast = {
 	moveToCellarFailed: "Échec du déplacement vers la cave",
 	tapToMove: "Touchez une case pour déplacer « {name} »",
 	wineDrunk: "Santé ! {name} est maintenant dans l'Historique",
-	removeWineFailed: "Échec du retrait du vin"
+	removeWineFailed: "Échec du retrait du vin",
+	changeCardBackgroundFailed: "Échec du changement d'arrière-plan"
 };
 var fr = {
 	wineType: wineType,
@@ -2924,6 +2884,36 @@ function getWineLocation(wine, cabinets, language) {
         return { text: `${cabinet.name} · ${cabinet.bottom_zone_name || loc.storage}`, cabinet, zone: "bottom", storageRow: null };
     }
     return { text: cabinet.name, cabinet, zone: "", storageRow: null };
+}
+
+/** Resize a base64 JPEG (no data: prefix) to a thumbnail data URL for storage.
+ *  640px/0.78 keeps back-label text (small print, appellation info) legible
+ *  while staying well within reason for a JSON-embedded data URI — roughly
+ *  10x the pixels of the old 200px/0.6 default, still only tens of KB. */
+function resizeImageForStorage(base64, maxDim = 640, quality = 0.78) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.createElement("canvas");
+            let w = img.width, h = img.height;
+            if (w > h) {
+                h = Math.round(h * maxDim / w);
+                w = maxDim;
+            }
+            else {
+                w = Math.round(w * maxDim / h);
+                h = maxDim;
+            }
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, w, h);
+            const dataUrl = canvas.toDataURL("image/jpeg", quality);
+            resolve(dataUrl);
+        };
+        img.onerror = () => resolve("");
+        img.src = `data:image/jpeg;base64,${base64}`;
+    });
 }
 
 // Shared search / filter / sort helpers.
@@ -5814,36 +5804,6 @@ CabinetGrid = __decorate([
     t$2("cabinet-grid")
 ], CabinetGrid);
 
-/** Resize a base64 JPEG (no data: prefix) to a thumbnail data URL for storage.
- *  640px/0.78 keeps back-label text (small print, appellation info) legible
- *  while staying well within reason for a JSON-embedded data URI — roughly
- *  10x the pixels of the old 200px/0.6 default, still only tens of KB. */
-function resizeImageForStorage(base64, maxDim = 640, quality = 0.78) {
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-            const canvas = document.createElement("canvas");
-            let w = img.width, h = img.height;
-            if (w > h) {
-                h = Math.round(h * maxDim / w);
-                w = maxDim;
-            }
-            else {
-                w = Math.round(w * maxDim / h);
-                h = maxDim;
-            }
-            canvas.width = w;
-            canvas.height = h;
-            const ctx = canvas.getContext("2d");
-            ctx.drawImage(img, 0, 0, w, h);
-            const dataUrl = canvas.toDataURL("image/jpeg", quality);
-            resolve(dataUrl);
-        };
-        img.onerror = () => resolve("");
-        img.src = `data:image/jpeg;base64,${base64}`;
-    });
-}
-
 let StarRating = class StarRating extends i$1 {
     constructor() {
         super(...arguments);
@@ -7178,11 +7138,7 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
       <div class="dialog-overlay" @click=${this._close}>
         <div class="dialog" style="position:relative" @click=${(e) => e.stopPropagation()}>
           ${dialogClose(this._close, this._t('ui.common.close'))}
-          <div class="dialog-top-bar">
-            ${this.mode !== "winelist"
-            ? b$1 `<button class="icon-btn" title="${this._t('ui.common.edit')}" @click=${this._startEditingFields}>✏️</button>`
-            : A$1}
-          </div>
+          <div class="dialog-top-bar"></div>
           <div class="wine-header">
             <div class="wine-image-col">
               <div
@@ -7210,7 +7166,7 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
                     @click=${() => (this._photoSide = "back")}
                   ></span>
                 </div>
-                ${this.mode !== "winelist"
+                ${this.mode !== "winelist" && this._editingFields
             ? b$1 `
                       <div class="photo-actions">
                         <button
@@ -7304,6 +7260,8 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
                             ${this._scanningLabel ? "..." : `📷 ${this._t("ui.wineDetail.scanLabelBtn")}`}
                           </button>`
                 : A$1}
+                      <button class="btn btn-primary" style="background:#455a64"
+                        @click=${this._startEditingFields}>✏️ ${this._t("ui.common.edit")}</button>
                     </div>
                     <div class="action-card">
                       ${this.mode === "cellar"
@@ -7320,8 +7278,10 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
                     </div>
                   </div>
                   ${this.mode === "cellar"
-                ? b$1 `<button class="btn btn-primary drink-btn" style="background:#722F37"
-                        @click=${this._onDrink}>🍷 ${this._t("ui.wineDetail.drinkBtn")}</button>`
+                ? b$1 `<div class="action-card">
+                        <button class="btn btn-primary drink-btn" style="background:#722F37"
+                          @click=${this._onDrink}>🍷 ${this._t("ui.wineDetail.drinkBtn")}</button>
+                      </div>`
                 : A$1}
                 </div>
                 ${wine.vivino_checked_at || wine.ai_checked_at || wine.vivino_updated_at || wine.ai_updated_at
@@ -7709,23 +7669,6 @@ WineDetailDialog.styles = [
         min-height: 36px;
         padding: 12px 56px 0 12px;
       }
-
-      .icon-btn {
-        background: none;
-        border: none;
-        cursor: pointer;
-        font-size: 1.1em;
-        padding: 6px 8px;
-        border-radius: 6px;
-        color: var(--wc-text-secondary);
-        transition: background 0.2s;
-        line-height: 1;
-      }
-
-      .icon-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
-      }
-
 
       .wine-header {
         display: flex;
@@ -8170,9 +8113,10 @@ WineDetailDialog.styles = [
         white-space: nowrap;
       }
 
-      /* Bottle actions: two cards — look-up (Vivino/AI, label photo) and
-         manage (copy/move/unassign/remove) — then a big Drink button on its
-         own below them, so the everyday action isn't lost among the rest. */
+      /* Bottle actions: two cards — look-up (Vivino/AI, label photo, edit)
+         and manage (copy/move/unassign/remove) — then a big Drink button in
+         its own card below them, so the everyday action isn't lost among
+         the rest. */
       .actions.grouped {
         flex-direction: column;
         align-items: stretch;
@@ -8198,6 +8142,8 @@ WineDetailDialog.styles = [
       }
 
       .actions .btn.drink-btn {
+        flex: 1;
+        justify-content: center;
         font-size: 1.05em;
         font-weight: 600;
         padding: 12px 16px;
@@ -17916,10 +17862,13 @@ InventoryDialog.styles = [
         pointer-events: none;
       }
 
+      /* Sort, direction and Filters stay on the right, also when the row
+         wraps under the search box. */
       .inv-sort {
         display: flex;
         gap: 4px;
         align-items: center;
+        margin-left: auto;
       }
 
       /* One height for the whole sort row. The select drops its native
@@ -18189,6 +18138,7 @@ InventoryDialog.styles = [
 
       .inv-chips {
         display: flex;
+        justify-content: flex-end;
         gap: 6px;
         padding: 0 16px 10px;
         flex-wrap: wrap;
@@ -18554,6 +18504,9 @@ InventoryDialog.styles = [
         .inv-search-wrapper {
           width: 100%;
         }
+        .inv-sort {
+          align-self: flex-end;
+        }
         .inv-stats {
           gap: 8px;
           font-size: 0.78em;
@@ -18762,6 +18715,7 @@ let VivinoAiSettingsDialog = class VivinoAiSettingsDialog extends i$1 {
         this.supportedLanguages = ["en", "fr", "de"];
         this.metadataCurrency = "USD";
         this.supportedCurrencies = ["USD", "EUR", "GBP", "CHF"];
+        this.cardBackground = null;
     }
     // Shorthand for t(key, this.hass?.language, params) — see wine-cellar-card.ts.
     _t(key, params) {
@@ -18784,6 +18738,19 @@ let VivinoAiSettingsDialog = class VivinoAiSettingsDialog extends i$1 {
     }
     _setLanguage(lang) {
         this.dispatchEvent(new CustomEvent("set-metadata-language", { detail: { value: lang } }));
+    }
+    // Hands the picked file over as a data URL; the card resizes and uploads it.
+    _onBackgroundPicked(e) {
+        const input = e.target;
+        const file = input.files?.[0];
+        input.value = "";
+        if (!file)
+            return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            this.dispatchEvent(new CustomEvent("set-card-background", { detail: { value: reader.result } }));
+        };
+        reader.readAsDataURL(file);
     }
     _setCurrency(currency) {
         this.dispatchEvent(new CustomEvent("set-metadata-currency", { detail: { value: currency } }));
@@ -18833,6 +18800,24 @@ let VivinoAiSettingsDialog = class VivinoAiSettingsDialog extends i$1 {
                 class="pill ${this.dispositionDisplay === "dot" ? "active" : ""}"
                 @click=${() => this._setDispositionDisplay("dot")}
               >${this._t("ui.vivinoAiSettings.dispositionDisplayDot")}</button>
+            </div>
+          </div>
+
+          <div class="settings-row">
+            <span class="settings-label">${this._t("ui.vivinoAiSettings.cardBackgroundLabel")}</span>
+            <div class="pill-group" style="align-items:center">
+              ${this.cardBackground
+            ? b$1 `<span class="bg-thumb" style="background-image:url('${this.cardBackground}')"></span>`
+            : b$1 `<span style="color:var(--wc-text-secondary);font-size:0.9em">${this._t("ui.vivinoAiSettings.cardBackgroundTheme")}</span>`}
+              <label class="pill" style="display:inline-flex;align-items:center">
+                ${this.cardBackground ? this._t("ui.vivinoAiSettings.cardBackgroundChange") : this._t("ui.vivinoAiSettings.cardBackgroundUpload")}
+                <input type="file" accept="image/*" hidden @change=${this._onBackgroundPicked} />
+              </label>
+              ${this.cardBackground
+            ? b$1 `<button class="pill" @click=${() => this.dispatchEvent(new CustomEvent("set-card-background", { detail: { value: null } }))}>
+                    ${this._t("ui.vivinoAiSettings.cardBackgroundRemove")}
+                  </button>`
+            : A$1}
             </div>
           </div>
 
@@ -18948,10 +18933,20 @@ VivinoAiSettingsDialog.styles = [
         font-size: 0.9em;
       }
 
+      /* Same selected look as the tabs and type chips. */
       .pill.active {
-        background: var(--wc-primary-text);
+        background: var(--wc-primary-grad);
         color: #fff;
-        border-color: var(--wc-primary-text);
+        border-color: transparent;
+      }
+
+      .bg-thumb {
+        width: 44px;
+        height: 30px;
+        border-radius: 6px;
+        border: 1px solid var(--wc-border);
+        background: var(--wc-field-bg) center / cover no-repeat;
+        flex-shrink: 0;
       }
 
       .settings-select {
@@ -19047,6 +19042,9 @@ __decorate([
 __decorate([
     n$1({ attribute: false })
 ], VivinoAiSettingsDialog.prototype, "supportedCurrencies", void 0);
+__decorate([
+    n$1({ type: String })
+], VivinoAiSettingsDialog.prototype, "cardBackground", void 0);
 VivinoAiSettingsDialog = __decorate([
     t$2("vivino-ai-settings-dialog")
 ], VivinoAiSettingsDialog);
@@ -19116,6 +19114,7 @@ let WineCellarCard = class WineCellarCard extends i$1 {
         this._enableWhisky = false;
         this._defaultWineType = "red";
         this._dispositionDisplay = "letter";
+        this._cardBackground = null;
         this._chamberingRoomSensor = "";
         this._chamberingTimeConstantMinutes = 75;
         this._chamberingEquilibrationHours = 24;
@@ -19323,6 +19322,7 @@ let WineCellarCard = class WineCellarCard extends i$1 {
             this._enableWhisky = capResult?.enable_whisky || false;
             this._defaultWineType = capResult?.default_wine_type || "red";
             this._dispositionDisplay = capResult?.disposition_display || "letter";
+            this._cardBackground = capResult?.card_background || null;
             this._chamberingRoomSensor = capResult?.chambering_room_sensor || "";
             this._chamberingTimeConstantMinutes = capResult?.chambering_time_constant_minutes ?? 75;
             this._chamberingEquilibrationHours = capResult?.chambering_equilibration_hours ?? 24;
@@ -20796,6 +20796,27 @@ let WineCellarCard = class WineCellarCard extends i$1 {
             this._showToast(this._t("toast.changeDispositionDisplayFailed"));
         }
     }
+    // Uploads value (a data URL straight from the file picker) or clears the
+    // background when value is null. Shrunk first: a phone photo is several MB
+    // and a card background never needs more than a screen's worth of pixels.
+    async _setCardBackground(value) {
+        try {
+            let image = null;
+            if (value) {
+                image = await resizeImageForStorage(value.split(",", 2)[1] || "", 1920, 0.82);
+                if (!image)
+                    throw new Error("unreadable image");
+            }
+            const result = await this.hass.callWS({
+                type: "wine_cellar/set_card_background",
+                ...(image ? { image } : {}),
+            });
+            this._cardBackground = result?.card_background || null;
+        }
+        catch (err) {
+            this._showToast(this._t("toast.changeCardBackgroundFailed"));
+        }
+    }
     // --- Batch Vivino Refresh ---
     _batchRefreshVivino() {
         this._batchAiFallback = this._aiFallbackAlways;
@@ -21079,6 +21100,10 @@ let WineCellarCard = class WineCellarCard extends i$1 {
         const showUnassigned = this._activeTab === "unassigned" && !isSearching;
         return b$1 `
       <ha-card>
+        <div
+          class="card-bg ${this._cardBackground ? "custom" : ""}"
+          style=${this._cardBackground ? `--wc-card-bg-image:url("${this._cardBackground}")` : ""}
+        ></div>
         <div class="header-row">
           <div class="title">
             <span class="title-icon">🍷</span>
@@ -21102,7 +21127,7 @@ let WineCellarCard = class WineCellarCard extends i$1 {
             ` : A$1}
             <button
               class="btn btn-primary"
-              style="font-size: 0.8em; padding: 5px 10px; background: #37474f;"
+              style="font-size: 0.8em; padding: 5px 10px; background: #5e3557;"
               @click=${() => {
             this._inventoryPairing = false;
             this._showInventory = true;
@@ -21837,7 +21862,9 @@ let WineCellarCard = class WineCellarCard extends i$1 {
           .supportedLanguages=${this._supportedLanguages}
           .metadataCurrency=${this._metadataCurrency}
           .supportedCurrencies=${this._supportedCurrencies}
+          .cardBackground=${this._cardBackground}
           @close=${() => (this._showVivinoAiSettings = false)}
+          @set-card-background=${(e) => this._setCardBackground(e.detail.value)}
           @set-ai-fallback-always=${(e) => this._setAiFallbackAlways(e.detail.value)}
           @set-enable-whisky=${(e) => this._setEnableWhisky(e.detail.value)}
           @set-default-wine-type=${(e) => this._setDefaultWineType(e.detail.value)}
@@ -22427,6 +22454,7 @@ WineCellarCard.styles = [
          glass-dark is set by _syncGlassMode() from the theme's text colour. */
       :host {
         display: block;
+        --wc-glass-scrim: linear-gradient(rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3));
         --wc-glass-surface: rgba(250, 248, 247, 0.84);
         --wc-glass-solid: #faf8f7;
         --wc-glass-field: rgba(255, 255, 255, 0.6);
@@ -22436,6 +22464,7 @@ WineCellarCard.styles = [
       }
 
       :host([glass-dark]) {
+        --wc-glass-scrim: linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35));
         --wc-glass-surface: rgba(32, 28, 32, 0.82);
         --wc-glass-solid: #201c20;
         --wc-glass-field: rgba(0, 0, 0, 0.28);
@@ -22444,8 +22473,49 @@ WineCellarCard.styles = [
         --wc-glass-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.08);
       }
 
+      /* clip, not hidden: hidden would make the card a scroll container and
+         pin .card-bg's sticky positioning to the card instead of the page. */
       ha-card {
+        overflow: clip;
+        isolation: isolate;
+      }
+
+      /* The card paints its own background, one screen tall, sticking to
+         the viewport while the card scrolls past. A glass theme otherwise
+         shows the dashboard wallpaper through a transparent card, and how
+         that wallpaper lands depends on how tall the card is — so All
+         Sections (tall) and a single rack (short) looked different.
+         Default: the theme's own wallpaper, blurred like the theme's frosted
+         cards; with no wallpaper this is empty and nothing changes. A
+         background uploaded in Settings replaces it (.custom). */
+      .card-bg {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        margin-bottom: -100vh;
+        z-index: -1;
+        pointer-events: none;
         overflow: hidden;
+        border-radius: inherit;
+      }
+
+      .card-bg::before {
+        content: "";
+        position: absolute;
+        inset: -24px;
+        background: var(--lovelace-background, var(--background-image, none));
+        background-size: cover;
+        background-position: center;
+        /* The theme's "fixed" would size the picture to the viewport on some
+           browsers and to the whole page on others (iOS ignores fixed). */
+        background-attachment: scroll;
+        filter: blur(8px) saturate(1.25);
+      }
+
+      .card-bg.custom::before {
+        inset: 0;
+        background: var(--wc-glass-scrim), var(--wc-card-bg-image) center / cover no-repeat;
+        filter: none;
       }
 
       /* Pending Vivino removals: pick-a-bottle panel */
@@ -22998,6 +23068,9 @@ __decorate([
 __decorate([
     r$1()
 ], WineCellarCard.prototype, "_dispositionDisplay", void 0);
+__decorate([
+    r$1()
+], WineCellarCard.prototype, "_cardBackground", void 0);
 __decorate([
     r$1()
 ], WineCellarCard.prototype, "_chamberingRoomSensor", void 0);
