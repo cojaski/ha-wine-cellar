@@ -891,7 +891,8 @@ var ui$1 = {
 		drink: "Drink",
 		drinkNow: "Drink Now",
 		hold: "Hold",
-		pastPeak: "Past Peak"
+		pastPeak: "Past Peak",
+		past: "Past"
 	},
 	arrangement: {
 		header: "🧹 Arrangement",
@@ -951,6 +952,8 @@ var ui$1 = {
 		vivinoSyncBtn: "🔄 Vivino Sync",
 		vivinoSyncing: "Vivino Syncing...",
 		inventoryBtn: "📦 Inventory",
+		pairingsBtn: "🍽️ Pairings",
+		pairingsTitle: "Find a wine to go with what you're eating",
 		addWineBtn: "+ Add Wine",
 		fullAiAnalysisTitle: "Full AI analysis on all wines (disposition, ratings, price, description)",
 		refreshVivinoTitle: "Refresh all wines from Vivino (ratings, price, description)",
@@ -1108,6 +1111,11 @@ var ui$1 = {
 		filterNotAnalyzed: "Not analyzed",
 		pairsWith: "Pairs with",
 		anyFood: "Any food",
+		pairingTitle: "What are you eating?",
+		pairingIntro: "Pick a dish to see the wines that go with it.",
+		pairingEmpty: "No wines have food pairings yet. A Vivino lookup adds them.",
+		pairingBanner: "Pairs with {food}",
+		pairingChange: "Change",
 		missingPairingsHintOne: "{n} wine has no pairing data. Only Vivino supplies pairings — use “Fill from Vivino” below the list.",
 		missingPairingsHintMany: "{n} wines have no pairing data. Only Vivino supplies pairings — use “Fill from Vivino” below the list.",
 		country: "Country",
@@ -1323,7 +1331,13 @@ var ui$1 = {
 		ratingsCountSuffix: " ({count} ratings)",
 		myRating: "My Rating",
 		aiScanBtn: "AI Scan",
-		scanLabelBtn: "Scan Label",
+		scanLabelBtn: "Label",
+		lookupBtn: "Vivino / AI",
+		lookupTitle: "Update this bottle's details from Vivino or AI",
+		lookupChooserTitle: "Update details",
+		lookupChooserIntro: "Choose a source:",
+		lookupVivinoDesc: "Ratings, description, grapes and food pairings from Vivino",
+		lookupAiDesc: "Full AI analysis: disposition, ratings, price, description",
 		scanLabelTitle: "Take a fresh photo of the label to update this bottle's photo and details",
 		resetAiContentBtn: "Reset text",
 		resetAiContentTitle: "Clear the description and food pairings so the next Vivino/AI lookup regenerates them from scratch (fixes text stuck in the wrong language)",
@@ -1710,7 +1724,8 @@ var ui = {
 		drink: "Boire",
 		drinkNow: "À boire",
 		hold: "À garder",
-		pastPeak: "Sur le déclin"
+		pastPeak: "Sur le déclin",
+		past: "Déclin"
 	},
 	arrangement: {
 		header: "🧹 Rangement",
@@ -1770,6 +1785,8 @@ var ui = {
 		vivinoSyncBtn: "🔄 Synchro Vivino",
 		vivinoSyncing: "Synchro Vivino en cours...",
 		inventoryBtn: "📦 Inventaire",
+		pairingsBtn: "🍽️ Accords",
+		pairingsTitle: "Trouver un vin pour accompagner votre plat",
 		addWineBtn: "+ Ajouter un vin",
 		fullAiAnalysisTitle: "Analyse IA complète sur tous les vins (disposition, notes, prix, description)",
 		refreshVivinoTitle: "Rafraîchir tous les vins depuis Vivino (notes, prix, description)",
@@ -1927,6 +1944,11 @@ var ui = {
 		filterNotAnalyzed: "Non analysé",
 		pairsWith: "Accords avec",
 		anyFood: "Tout accord",
+		pairingTitle: "Que mangez-vous ?",
+		pairingIntro: "Choisissez un plat pour voir les vins qui l'accompagnent.",
+		pairingEmpty: "Aucun vin n'a encore d'accords mets-vins. Une recherche Vivino les ajoute.",
+		pairingBanner: "Accords avec {food}",
+		pairingChange: "Changer",
 		missingPairingsHintOne: "{n} vin n'a pas d'accords. Seul Vivino fournit les accords — utilisez « Compléter depuis Vivino » ci-dessous.",
 		missingPairingsHintMany: "{n} vins n'ont pas d'accords. Seul Vivino fournit les accords — utilisez « Compléter depuis Vivino » ci-dessous.",
 		country: "Pays",
@@ -2142,7 +2164,13 @@ var ui = {
 		ratingsCountSuffix: " ({count} avis)",
 		myRating: "Ma note",
 		aiScanBtn: "Analyse IA",
-		scanLabelBtn: "Scanner l'étiquette",
+		scanLabelBtn: "Étiquette",
+		lookupBtn: "Vivino / IA",
+		lookupTitle: "Mettre à jour les détails de cette bouteille via Vivino ou l'IA",
+		lookupChooserTitle: "Mettre à jour les détails",
+		lookupChooserIntro: "Choisissez une source :",
+		lookupVivinoDesc: "Notes, description, cépages et accords mets-vins depuis Vivino",
+		lookupAiDesc: "Analyse IA complète : disposition, notes, prix, description",
 		scanLabelTitle: "Prendre une nouvelle photo de l'étiquette pour mettre à jour la photo et les détails de cette bouteille",
 		resetAiContentBtn: "Réinitialiser",
 		resetAiContentTitle: "Effacer la description et les accords mets-vins pour que la prochaine recherche Vivino/IA les régénère entièrement (corrige un texte resté dans la mauvaise langue)",
@@ -4041,7 +4069,8 @@ let CabinetGrid = class CabinetGrid extends i$1 {
         const drinkEnd = drinkYears.length === 2 ? drinkYears[1] : drinkYears[0];
         return currentYear >= peakStart && currentYear <= drinkEnd;
     }
-    // The classic D/H/P letter badge — only in "letter" mode. In "dot" mode
+    // The classic D/H/P letter badge (a "Drink"/"Hold"/"Past" pill in the
+    // single-rack view) — only in "letter" mode. In "dot" mode
     // there's no badge at all; _dispositionRingStyle below draws the status
     // as a thicker colored ring around the bottle instead, so the photo
     // stays uncovered.
@@ -4049,7 +4078,9 @@ let CabinetGrid = class CabinetGrid extends i$1 {
         if (!dispClass || this.dispositionDisplay === "dot")
             return A$1;
         const peakClass = dispClass === "drink" && this._isInOrAfterPeakWindow(wine) ? "peak" : "";
-        return b$1 `<span class="${className} ${dispClass} ${peakClass}">${disp}</span>`;
+        // Single-rack view has room for a word instead of the bare letter.
+        const text = this.single ? this._t(`ui.disposition.${dispClass}`) : disp;
+        return b$1 `<span class="${className} ${dispClass} ${peakClass}">${text}</span>`;
     }
     // "dot" mode's ring: a thicker border colored by disposition (green/blue/
     // purple) instead of the classic centered badge — the whole point is to
@@ -5085,20 +5116,32 @@ CabinetGrid.styles = [
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
       }
 
-      /* Single-rack view: a quarter-size badge tucked into the top-left
-         corner instead of covering the middle of the label. */
+      /* Single-rack view: a short text pill ("Drink"/"Hold"/"Past") along
+         the bottom edge instead of covering the middle of the label. Same
+         colors as the badge; only the shape and position change. */
       :host([single]) .cell .disposition,
       :host([single]) .zone-bottle .disposition,
       :host([single]) .zone-shelf-dot .disposition {
-        top: 6%;
-        left: 6%;
-        transform: none;
-        width: 16%;
-        height: 16%;
-        min-width: 10px;
-        min-height: 10px;
-        font-size: 0;
+        top: auto;
+        bottom: 4%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: auto;
+        height: auto;
+        max-width: 92%;
+        padding: 2px 6px;
+        border-radius: 999px;
         border-width: 1px;
+        font-size: clamp(7px, 16cqi, 11px);
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* Lift the depth dots clear of the pill. */
+      :host([single]) .depth-dots {
+        bottom: 26%;
       }
 
       .zone-bottle:hover {
@@ -6051,6 +6094,7 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
         this._saving = false;
         this._refreshing = false;
         this._analyzing = false;
+        this._showLookupChooser = false;
         this._resettingAiContent = false;
         this._scanningLabel = false;
         this._showLabelCamera = false;
@@ -6453,6 +6497,25 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
             console.error("Vivino refresh failed", err);
         }
         this._refreshing = false;
+    }
+    // One "Vivino / AI" button: without an AI provider there's nothing to
+    // choose, so it goes straight to Vivino; otherwise it opens the same
+    // source chooser as the inventory review.
+    _onLookup() {
+        if (!this.hasGemini) {
+            this._refreshFromVivino();
+            return;
+        }
+        this._showLookupChooser = true;
+    }
+    _pickLookup(kind) {
+        this._showLookupChooser = false;
+        if (kind === "vivino")
+            this._refreshFromVivino();
+        else if (kind === "ai")
+            this._analyzeWithAI();
+        else
+            this._resetAiContent();
     }
     async _confirmAiFallback(remember) {
         this._aiFallbackReason = null;
@@ -6946,42 +7009,40 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
 
           ${!this._editingFields && (this.mode === "cellar" || this.mode === "buylist")
             ? b$1 `
-                <div class="actions">
-                  <button class="btn btn-primary" style="background:#8e24aa"
-                    ?disabled=${this._refreshing} @click=${this._refreshFromVivino}>
-                    ${this._refreshing ? "..." : "🍇 Vivino"}
-                  </button>
-                  ${this.hasGemini
-                ? b$1 `<button class="btn btn-primary" style="background:#1565c0"
-                        ?disabled=${this._analyzing} @click=${this._analyzeWithAI}>
-                        ${this._analyzing ? "..." : `🤖 ${this._t("ui.wineDetail.aiScanBtn")}`}
-                      </button>
-                      <button class="btn btn-primary" style="background:#2e7d32"
-                        ?disabled=${this._scanningLabel} @click=${() => (this._showLabelCamera = true)}
-                        title="${this._t('ui.wineDetail.scanLabelTitle')}">
-                        ${this._scanningLabel ? "..." : `📷 ${this._t("ui.wineDetail.scanLabelBtn")}`}
-                      </button>
-                      <button class="btn btn-primary" style="background:#78909c"
-                        ?disabled=${this._resettingAiContent} @click=${this._resetAiContent}
-                        title="${this._t('ui.wineDetail.resetAiContentTitle')}">
-                        ${this._resettingAiContent ? "..." : `♻️ ${this._t("ui.wineDetail.resetAiContentBtn")}`}
-                      </button>`
-                : A$1}
+                <div class="actions grouped">
                   ${this.mode === "cellar"
-                ? b$1 `
-                        <button class="btn btn-primary" style="background:#546e7a" @click=${this._onCopy}>📋 ${this._t("ui.wineDetail.copyBtn")}</button>
-                        <button class="btn btn-primary" style="background:#6d4c41" @click=${this._onMove}>↔ ${this._t("ui.wineDetail.moveBtn")}</button>
-                        ${wine.cabinet_id
-                    ? b$1 `<button class="btn btn-primary" style="background:#ef6c00" @click=${this._moveToUnassigned}>📦 ${this._t("ui.wineDetail.unassignBtn")}</button>`
-                    : A$1}
-                      `
-                : A$1}
-                  ${this.mode === "cellar"
-                ? b$1 `<button class="btn btn-primary" style="background:#722F37"
+                ? b$1 `<button class="btn btn-primary drink-btn" style="background:#722F37"
                         @click=${this._onDrink}>🍷 ${this._t("ui.wineDetail.drinkBtn")}</button>`
                 : A$1}
-                  <button class="btn btn-primary" style="background:#c62828"
-                    @click=${this._onRemove}>✕ ${this._t("ui.wineDetail.removeBtn")}</button>
+                  <div class="action-cards">
+                    <div class="action-card">
+                      <button class="btn btn-primary" style="background:#8e24aa"
+                        ?disabled=${this._refreshing || this._analyzing} @click=${this._onLookup}
+                        title="${this._t('ui.wineDetail.lookupTitle')}">
+                        ${this._refreshing || this._analyzing ? "..." : `🔎 ${this._t("ui.wineDetail.lookupBtn")}`}
+                      </button>
+                      ${this.hasGemini
+                ? b$1 `<button class="btn btn-primary" style="background:#2e7d32"
+                            ?disabled=${this._scanningLabel} @click=${() => (this._showLabelCamera = true)}
+                            title="${this._t('ui.wineDetail.scanLabelTitle')}">
+                            ${this._scanningLabel ? "..." : `📷 ${this._t("ui.wineDetail.scanLabelBtn")}`}
+                          </button>`
+                : A$1}
+                    </div>
+                    <div class="action-card">
+                      ${this.mode === "cellar"
+                ? b$1 `
+                            <button class="btn btn-primary" style="background:#546e7a" @click=${this._onCopy}>📋 ${this._t("ui.wineDetail.copyBtn")}</button>
+                            <button class="btn btn-primary" style="background:#6d4c41" @click=${this._onMove}>↔ ${this._t("ui.wineDetail.moveBtn")}</button>
+                            ${wine.cabinet_id
+                    ? b$1 `<button class="btn btn-primary" style="background:#ef6c00" @click=${this._moveToUnassigned}>📦 ${this._t("ui.wineDetail.unassignBtn")}</button>`
+                    : A$1}
+                          `
+                : A$1}
+                      <button class="btn btn-primary" style="background:#c62828"
+                        @click=${this._onRemove}>✕ ${this._t("ui.wineDetail.removeBtn")}</button>
+                    </div>
+                  </div>
                 </div>
                 ${wine.vivino_checked_at || wine.ai_checked_at || wine.vivino_updated_at || wine.ai_updated_at
                 ? b$1 `
@@ -7294,6 +7355,36 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
                   <button
                     style="padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.85em"
                     @click=${() => (this._showLabelCamera = false)}
+                  >${this._t("ui.common.cancel")}</button>
+                </div>
+              </div>
+            </div>
+          ` : A$1}
+          ${this._showLookupChooser ? b$1 `
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10;border-radius:16px"
+              @click=${() => (this._showLookupChooser = false)}>
+              <div style="background:var(--wc-bg);border-radius:12px;padding:20px;max-width:320px;width:90%" @click=${(e) => e.stopPropagation()}>
+                <h3 style="margin:0 0 4px;font-size:1em;color:var(--wc-text)">${this._t("ui.wineDetail.lookupChooserTitle")}</h3>
+                <p style="margin:0 0 12px;font-size:0.85em;color:var(--wc-text-secondary)">${this._t("ui.wineDetail.lookupChooserIntro")}</p>
+                <div class="lookup-options">
+                  <button class="lookup-option" style="background:#8e24aa" @click=${() => this._pickLookup("vivino")}>
+                    <span>🍇 Vivino</span>
+                    <small>${this._t("ui.wineDetail.lookupVivinoDesc")}</small>
+                  </button>
+                  <button class="lookup-option" style="background:#1565c0" @click=${() => this._pickLookup("ai")}>
+                    <span>🤖 ${this._t("ui.wineDetail.aiScanBtn")}</span>
+                    <small>${this._t("ui.wineDetail.lookupAiDesc")}</small>
+                  </button>
+                  <button class="lookup-option" style="background:#78909c"
+                    ?disabled=${this._resettingAiContent} @click=${() => this._pickLookup("reset")}>
+                    <span>♻️ ${this._t("ui.wineDetail.resetAiContentBtn")}</span>
+                    <small>${this._t("ui.wineDetail.resetAiContentTitle")}</small>
+                  </button>
+                </div>
+                <div style="text-align:center">
+                  <button
+                    style="padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.8em"
+                    @click=${() => (this._showLookupChooser = false)}
                   >${this._t("ui.common.cancel")}</button>
                 </div>
               </div>
@@ -7800,6 +7891,72 @@ WineDetailDialog.styles = [
         white-space: nowrap;
       }
 
+      /* Bottle actions: a big Drink button on its own, then two cards —
+         look-up (Vivino/AI, label photo) and manage (copy/move/unassign/
+         remove) — so the everyday action isn't lost among the rest. */
+      .actions.grouped {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+
+      .action-cards {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .action-card {
+        flex: 1 1 auto;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+        padding: 8px;
+        border: 1px solid var(--wc-border);
+        border-radius: 12px;
+        background: var(--wc-hover);
+      }
+
+      .actions .btn.drink-btn {
+        font-size: 1.05em;
+        font-weight: 600;
+        padding: 12px 16px;
+        border-radius: 12px;
+      }
+
+      .lookup-options {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .lookup-option {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 14px;
+        color: #fff;
+        cursor: pointer;
+        text-align: left;
+        font-size: 0.9em;
+        font-weight: 500;
+      }
+
+      .lookup-option small {
+        font-size: 0.8em;
+        font-weight: 400;
+        opacity: 0.85;
+      }
+
+      .lookup-option:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+
       /* Edit form styles */
       .edit-form {
         padding: 0 20px 16px;
@@ -7939,6 +8096,9 @@ __decorate([
 __decorate([
     r$1()
 ], WineDetailDialog.prototype, "_analyzing", void 0);
+__decorate([
+    r$1()
+], WineDetailDialog.prototype, "_showLookupChooser", void 0);
 __decorate([
     r$1()
 ], WineDetailDialog.prototype, "_resettingAiContent", void 0);
@@ -15258,6 +15418,28 @@ function categorizeFoodPairing(pairing) {
     return OTHER_FOOD_CATEGORY;
 }
 
+// One icon per food category, for the Pairings chooser.
+const FOOD_ICONS = {
+    aperitif: "🫒",
+    charcuterie: "🥓",
+    cheese: "🧀",
+    seafood: "🦪",
+    fish: "🐟",
+    duck: "🦆",
+    poultry: "🍗",
+    lamb: "🐑",
+    game: "🦌",
+    beef: "🥩",
+    pork: "🐖",
+    stew: "🍲",
+    grill: "🔥",
+    spicy: "🌶️",
+    mediterranean: "🍅",
+    salad: "🥗",
+    vegetarian: "🥦",
+    dessert: "🍰",
+    other: "🍽️",
+};
 // Persisted so the inventory reopens the way it was left; the search query is
 // deliberately excluded — a stale query silently hiding the cellar is far more
 // confusing than a stale sort order.
@@ -15288,6 +15470,10 @@ let InventoryDialog = class InventoryDialog extends i$1 {
         // only mirror their progress so the review button can show it.
         this.analyzing = false;
         this.batchVivino = false;
+        // Opened from the card's "Pairings" button: start on the food chooser,
+        // then show the inventory filtered to what goes with the pick.
+        this.pairingMode = false;
+        this._showPairingPicker = false;
         this._searchQuery = "";
         this._typeFilter = DEFAULT_FILTERS.typeFilter;
         this._dispositionFilter = DEFAULT_FILTERS.dispositionFilter;
@@ -15388,6 +15574,7 @@ let InventoryDialog = class InventoryDialog extends i$1 {
             this._historyItems = [];
             this._buyAgainOnly = false;
             this._editingHistoryId = "";
+            this._showPairingPicker = this.pairingMode;
         }
     }
     _close() {
@@ -15523,6 +15710,54 @@ let InventoryDialog = class InventoryDialog extends i$1 {
     }
     _foodLabel(id) {
         return this._t(`foodCategory.${id}`);
+    }
+    // Picking a food clears every other filter first: a leftover saved type
+    // or rating filter would otherwise hide wines that pair, with nothing on
+    // screen saying why.
+    _pickPairing(id) {
+        this._clearFilters();
+        this._foodFilter = id;
+        this._savePrefs();
+        this._showPairingPicker = false;
+    }
+    _renderPairingPicker() {
+        if (!this._showPairingPicker)
+            return A$1;
+        const counts = new Map();
+        for (const w of this.wines) {
+            for (const id of new Set(splitMulti(w.food_pairings).map(categorizeFoodPairing))) {
+                counts.set(id, (counts.get(id) ?? 0) + 1);
+            }
+        }
+        const options = this._foodOptions();
+        const missing = this._winesWithoutPairings();
+        return b$1 `
+      <div class="inv-confirm-overlay" @click=${() => (this._showPairingPicker = false)}>
+        <div class="inv-confirm-box inv-pairing-box" @click=${(e) => e.stopPropagation()}>
+          <h3>${this._t("ui.inventory.pairingTitle")}</h3>
+          <p>${options.length ? this._t("ui.inventory.pairingIntro") : this._t("ui.inventory.pairingEmpty")}</p>
+          <div class="inv-pairing-grid">
+            ${options.map((id) => b$1 `
+                <button class="inv-pairing-option" @click=${() => this._pickPairing(id)}>
+                  <span class="inv-pairing-icon">${FOOD_ICONS[id] ?? "🍽️"}</span>
+                  <span class="inv-pairing-label">${this._foodLabel(id)}</span>
+                  <small>${counts.get(id) ?? 0}</small>
+                </button>
+              `)}
+          </div>
+          ${missing
+            ? b$1 `<small class="inv-pairing-missing">${missing > 1
+                ? this._t("ui.inventory.missingPairingsHintMany", { n: missing })
+                : this._t("ui.inventory.missingPairingsHintOne", { n: missing })}</small>`
+            : A$1}
+          <div class="inv-confirm-btns">
+            <button class="inv-confirm-cancel" @click=${() => (this._showPairingPicker = false)}>
+              ${this._t("ui.common.cancel")}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
     }
     _winesWithoutPairings() {
         return this.wines.filter((w) => !splitMulti(w.food_pairings).length).length;
@@ -16905,6 +17140,17 @@ let InventoryDialog = class InventoryDialog extends i$1 {
 
           ${this._showFilters ? this._renderFilterPanel(missingPairings) : A$1}
 
+          ${this.pairingMode && this._foodFilter !== "all"
+            ? b$1 `
+                <div class="inv-pairing-banner">
+                  <span>${FOOD_ICONS[this._foodFilter] ?? "🍽️"} ${this._t("ui.inventory.pairingBanner", { food: this._foodLabel(this._foodFilter) })}</span>
+                  <button class="inv-clear-filters" @click=${() => (this._showPairingPicker = true)}>
+                    ${this._t("ui.inventory.pairingChange")}
+                  </button>
+                </div>
+              `
+            : A$1}
+
           ${narrowed
             ? b$1 `
                 <div class="inv-active-filters">
@@ -17069,6 +17315,7 @@ let InventoryDialog = class InventoryDialog extends i$1 {
 
           ${this._renderEnrichConfirm()}
           ${this._renderReviewChooser()}
+          ${this._renderPairingPicker()}
 
           <!-- CSV Import Mode Overlay -->
           ${this._confirmImport && this._pendingImport
@@ -17241,6 +17488,71 @@ InventoryDialog.styles = [
         text-align: left;
         font-size: 0.9em;
         font-weight: 500;
+      }
+
+      .inv-pairing-box {
+        max-width: 520px;
+        max-height: 85%;
+        overflow-y: auto;
+      }
+
+      .inv-pairing-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .inv-pairing-option {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        padding: 10px 6px;
+        border: 1px solid var(--wc-border);
+        border-radius: 10px;
+        background: var(--wc-hover);
+        color: var(--wc-text);
+        cursor: pointer;
+        font-size: 0.8em;
+      }
+
+      .inv-pairing-option:hover {
+        border-color: var(--wc-accent, #722f37);
+      }
+
+      .inv-pairing-icon {
+        font-size: 1.8em;
+        line-height: 1.2;
+      }
+
+      .inv-pairing-label {
+        font-weight: 500;
+        text-align: center;
+      }
+
+      .inv-pairing-option small {
+        color: var(--wc-text-secondary);
+      }
+
+      .inv-pairing-missing {
+        display: block;
+        margin-bottom: 12px;
+        color: var(--wc-text-secondary);
+      }
+
+      .inv-pairing-banner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin: 0 16px 8px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        background: var(--wc-hover);
+        font-size: 0.9em;
+        font-weight: 500;
+        color: var(--wc-text);
       }
 
       .inv-review-option small {
@@ -17984,6 +18296,12 @@ __decorate([
     n$1({ type: Boolean })
 ], InventoryDialog.prototype, "batchVivino", void 0);
 __decorate([
+    n$1({ type: Boolean })
+], InventoryDialog.prototype, "pairingMode", void 0);
+__decorate([
+    r$1()
+], InventoryDialog.prototype, "_showPairingPicker", void 0);
+__decorate([
     r$1()
 ], InventoryDialog.prototype, "_searchQuery", void 0);
 __decorate([
@@ -18500,6 +18818,7 @@ let WineCellarCard = class WineCellarCard extends i$1 {
         this._showVivinoAiSettings = false;
         this._showWineList = false;
         this._showInventory = false;
+        this._inventoryPairing = false;
         this._findingsCache = null;
         this._unsubscribe = null;
         this._subscribing = false;
@@ -20452,10 +20771,24 @@ let WineCellarCard = class WineCellarCard extends i$1 {
             <button
               class="btn btn-primary"
               style="font-size: 0.8em; padding: 5px 10px; background: #37474f;"
-              @click=${() => (this._showInventory = true)}
+              @click=${() => {
+            this._inventoryPairing = false;
+            this._showInventory = true;
+        }}
               title="${this._t("ui.card.inventoryTitle")}"
             >
               ${this._t("ui.card.inventoryBtn")}
+            </button>
+            <button
+              class="btn btn-primary"
+              style="font-size: 0.8em; padding: 5px 10px; background: #5d4037;"
+              @click=${() => {
+            this._inventoryPairing = true;
+            this._showInventory = true;
+        }}
+              title="${this._t("ui.card.pairingsTitle")}"
+            >
+              ${this._t("ui.card.pairingsBtn")}
             </button>
             <button
               class="btn btn-primary"
@@ -21059,6 +21392,7 @@ let WineCellarCard = class WineCellarCard extends i$1 {
           .currency=${this._metadataCurrency}
           .analyzing=${this._analyzing}
           .batchVivino=${this._batchVivino}
+          .pairingMode=${this._inventoryPairing}
           @close=${() => (this._showInventory = false)}
           @wine-updated=${() => this._loadData()}
           @locate-wine=${(e) => {
@@ -22303,6 +22637,9 @@ __decorate([
 __decorate([
     r$1()
 ], WineCellarCard.prototype, "_showInventory", void 0);
+__decorate([
+    r$1()
+], WineCellarCard.prototype, "_inventoryPairing", void 0);
 __decorate([
     r$1()
 ], WineCellarCard.prototype, "_showArrangement", void 0);

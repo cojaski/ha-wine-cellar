@@ -34,6 +34,7 @@ export class WineDetailDialog extends LitElement {
   @state() private _saving = false;
   @state() private _refreshing = false;
   @state() private _analyzing = false;
+  @state() private _showLookupChooser = false;
   @state() private _resettingAiContent = false;
   @state() private _scanningLabel = false;
   @state() private _showLabelCamera = false;
@@ -531,6 +532,72 @@ export class WineDetailDialog extends LitElement {
         white-space: nowrap;
       }
 
+      /* Bottle actions: a big Drink button on its own, then two cards —
+         look-up (Vivino/AI, label photo) and manage (copy/move/unassign/
+         remove) — so the everyday action isn't lost among the rest. */
+      .actions.grouped {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+
+      .action-cards {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .action-card {
+        flex: 1 1 auto;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+        padding: 8px;
+        border: 1px solid var(--wc-border);
+        border-radius: 12px;
+        background: var(--wc-hover);
+      }
+
+      .actions .btn.drink-btn {
+        font-size: 1.05em;
+        font-weight: 600;
+        padding: 12px 16px;
+        border-radius: 12px;
+      }
+
+      .lookup-options {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .lookup-option {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 14px;
+        color: #fff;
+        cursor: pointer;
+        text-align: left;
+        font-size: 0.9em;
+        font-weight: 500;
+      }
+
+      .lookup-option small {
+        font-size: 0.8em;
+        font-weight: 400;
+        opacity: 0.85;
+      }
+
+      .lookup-option:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+
       /* Edit form styles */
       .edit-form {
         padding: 0 20px 16px;
@@ -1020,6 +1087,24 @@ export class WineDetailDialog extends LitElement {
     this._refreshing = false;
   }
 
+  // One "Vivino / AI" button: without an AI provider there's nothing to
+  // choose, so it goes straight to Vivino; otherwise it opens the same
+  // source chooser as the inventory review.
+  private _onLookup() {
+    if (!this.hasGemini) {
+      this._refreshFromVivino();
+      return;
+    }
+    this._showLookupChooser = true;
+  }
+
+  private _pickLookup(kind: "vivino" | "ai" | "reset") {
+    this._showLookupChooser = false;
+    if (kind === "vivino") this._refreshFromVivino();
+    else if (kind === "ai") this._analyzeWithAI();
+    else this._resetAiContent();
+  }
+
   private async _confirmAiFallback(remember: boolean) {
     this._aiFallbackReason = null;
     if (remember) {
@@ -1497,42 +1582,40 @@ export class WineDetailDialog extends LitElement {
 
           ${!this._editingFields && (this.mode === "cellar" || this.mode === "buylist")
             ? html`
-                <div class="actions">
-                  <button class="btn btn-primary" style="background:#8e24aa"
-                    ?disabled=${this._refreshing} @click=${this._refreshFromVivino}>
-                    ${this._refreshing ? "..." : "🍇 Vivino"}
-                  </button>
-                  ${this.hasGemini
-                    ? html`<button class="btn btn-primary" style="background:#1565c0"
-                        ?disabled=${this._analyzing} @click=${this._analyzeWithAI}>
-                        ${this._analyzing ? "..." : `🤖 ${this._t("ui.wineDetail.aiScanBtn")}`}
-                      </button>
-                      <button class="btn btn-primary" style="background:#2e7d32"
-                        ?disabled=${this._scanningLabel} @click=${() => (this._showLabelCamera = true)}
-                        title="${this._t('ui.wineDetail.scanLabelTitle')}">
-                        ${this._scanningLabel ? "..." : `📷 ${this._t("ui.wineDetail.scanLabelBtn")}`}
-                      </button>
-                      <button class="btn btn-primary" style="background:#78909c"
-                        ?disabled=${this._resettingAiContent} @click=${this._resetAiContent}
-                        title="${this._t('ui.wineDetail.resetAiContentTitle')}">
-                        ${this._resettingAiContent ? "..." : `♻️ ${this._t("ui.wineDetail.resetAiContentBtn")}`}
-                      </button>`
-                    : nothing}
+                <div class="actions grouped">
                   ${this.mode === "cellar"
-                    ? html`
-                        <button class="btn btn-primary" style="background:#546e7a" @click=${this._onCopy}>📋 ${this._t("ui.wineDetail.copyBtn")}</button>
-                        <button class="btn btn-primary" style="background:#6d4c41" @click=${this._onMove}>↔ ${this._t("ui.wineDetail.moveBtn")}</button>
-                        ${wine.cabinet_id
-                          ? html`<button class="btn btn-primary" style="background:#ef6c00" @click=${this._moveToUnassigned}>📦 ${this._t("ui.wineDetail.unassignBtn")}</button>`
-                          : nothing}
-                      `
-                    : nothing}
-                  ${this.mode === "cellar"
-                    ? html`<button class="btn btn-primary" style="background:#722F37"
+                    ? html`<button class="btn btn-primary drink-btn" style="background:#722F37"
                         @click=${this._onDrink}>🍷 ${this._t("ui.wineDetail.drinkBtn")}</button>`
                     : nothing}
-                  <button class="btn btn-primary" style="background:#c62828"
-                    @click=${this._onRemove}>✕ ${this._t("ui.wineDetail.removeBtn")}</button>
+                  <div class="action-cards">
+                    <div class="action-card">
+                      <button class="btn btn-primary" style="background:#8e24aa"
+                        ?disabled=${this._refreshing || this._analyzing} @click=${this._onLookup}
+                        title="${this._t('ui.wineDetail.lookupTitle')}">
+                        ${this._refreshing || this._analyzing ? "..." : `🔎 ${this._t("ui.wineDetail.lookupBtn")}`}
+                      </button>
+                      ${this.hasGemini
+                        ? html`<button class="btn btn-primary" style="background:#2e7d32"
+                            ?disabled=${this._scanningLabel} @click=${() => (this._showLabelCamera = true)}
+                            title="${this._t('ui.wineDetail.scanLabelTitle')}">
+                            ${this._scanningLabel ? "..." : `📷 ${this._t("ui.wineDetail.scanLabelBtn")}`}
+                          </button>`
+                        : nothing}
+                    </div>
+                    <div class="action-card">
+                      ${this.mode === "cellar"
+                        ? html`
+                            <button class="btn btn-primary" style="background:#546e7a" @click=${this._onCopy}>📋 ${this._t("ui.wineDetail.copyBtn")}</button>
+                            <button class="btn btn-primary" style="background:#6d4c41" @click=${this._onMove}>↔ ${this._t("ui.wineDetail.moveBtn")}</button>
+                            ${wine.cabinet_id
+                              ? html`<button class="btn btn-primary" style="background:#ef6c00" @click=${this._moveToUnassigned}>📦 ${this._t("ui.wineDetail.unassignBtn")}</button>`
+                              : nothing}
+                          `
+                        : nothing}
+                      <button class="btn btn-primary" style="background:#c62828"
+                        @click=${this._onRemove}>✕ ${this._t("ui.wineDetail.removeBtn")}</button>
+                    </div>
+                  </div>
                 </div>
                 ${wine.vivino_checked_at || wine.ai_checked_at || wine.vivino_updated_at || wine.ai_updated_at
                   ? html`
@@ -1851,6 +1934,36 @@ export class WineDetailDialog extends LitElement {
                   <button
                     style="padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.85em"
                     @click=${() => (this._showLabelCamera = false)}
+                  >${this._t("ui.common.cancel")}</button>
+                </div>
+              </div>
+            </div>
+          ` : nothing}
+          ${this._showLookupChooser ? html`
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10;border-radius:16px"
+              @click=${() => (this._showLookupChooser = false)}>
+              <div style="background:var(--wc-bg);border-radius:12px;padding:20px;max-width:320px;width:90%" @click=${(e: Event) => e.stopPropagation()}>
+                <h3 style="margin:0 0 4px;font-size:1em;color:var(--wc-text)">${this._t("ui.wineDetail.lookupChooserTitle")}</h3>
+                <p style="margin:0 0 12px;font-size:0.85em;color:var(--wc-text-secondary)">${this._t("ui.wineDetail.lookupChooserIntro")}</p>
+                <div class="lookup-options">
+                  <button class="lookup-option" style="background:#8e24aa" @click=${() => this._pickLookup("vivino")}>
+                    <span>🍇 Vivino</span>
+                    <small>${this._t("ui.wineDetail.lookupVivinoDesc")}</small>
+                  </button>
+                  <button class="lookup-option" style="background:#1565c0" @click=${() => this._pickLookup("ai")}>
+                    <span>🤖 ${this._t("ui.wineDetail.aiScanBtn")}</span>
+                    <small>${this._t("ui.wineDetail.lookupAiDesc")}</small>
+                  </button>
+                  <button class="lookup-option" style="background:#78909c"
+                    ?disabled=${this._resettingAiContent} @click=${() => this._pickLookup("reset")}>
+                    <span>♻️ ${this._t("ui.wineDetail.resetAiContentBtn")}</span>
+                    <small>${this._t("ui.wineDetail.resetAiContentTitle")}</small>
+                  </button>
+                </div>
+                <div style="text-align:center">
+                  <button
+                    style="padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.8em"
+                    @click=${() => (this._showLookupChooser = false)}
                   >${this._t("ui.common.cancel")}</button>
                 </div>
               </div>

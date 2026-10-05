@@ -13,6 +13,29 @@ import {
   collectFacet,
 } from "../utils/search";
 import { categorizeFoodPairing, FOOD_CATEGORY_IDS } from "../utils/foodCategories";
+
+// One icon per food category, for the Pairings chooser.
+const FOOD_ICONS: Record<string, string> = {
+  aperitif: "🫒",
+  charcuterie: "🥓",
+  cheese: "🧀",
+  seafood: "🦪",
+  fish: "🐟",
+  duck: "🦆",
+  poultry: "🍗",
+  lamb: "🐑",
+  game: "🦌",
+  beef: "🥩",
+  pork: "🐖",
+  stew: "🍲",
+  grill: "🔥",
+  spicy: "🌶️",
+  mediterranean: "🍅",
+  salad: "🥗",
+  vegetarian: "🥦",
+  dessert: "🍰",
+  other: "🍽️",
+};
 import "./wine-detail-dialog";
 
 type SortField =
@@ -63,6 +86,10 @@ export class InventoryDialog extends LitElement {
   // only mirror their progress so the review button can show it.
   @property({ type: Boolean }) analyzing = false;
   @property({ type: Boolean }) batchVivino = false;
+  // Opened from the card's "Pairings" button: start on the food chooser,
+  // then show the inventory filtered to what goes with the pick.
+  @property({ type: Boolean }) pairingMode = false;
+  @state() private _showPairingPicker = false;
 
   @state() private _searchQuery = "";
   @state() private _typeFilter = DEFAULT_FILTERS.typeFilter;
@@ -211,6 +238,71 @@ export class InventoryDialog extends LitElement {
         text-align: left;
         font-size: 0.9em;
         font-weight: 500;
+      }
+
+      .inv-pairing-box {
+        max-width: 520px;
+        max-height: 85%;
+        overflow-y: auto;
+      }
+
+      .inv-pairing-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .inv-pairing-option {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        padding: 10px 6px;
+        border: 1px solid var(--wc-border);
+        border-radius: 10px;
+        background: var(--wc-hover);
+        color: var(--wc-text);
+        cursor: pointer;
+        font-size: 0.8em;
+      }
+
+      .inv-pairing-option:hover {
+        border-color: var(--wc-accent, #722f37);
+      }
+
+      .inv-pairing-icon {
+        font-size: 1.8em;
+        line-height: 1.2;
+      }
+
+      .inv-pairing-label {
+        font-weight: 500;
+        text-align: center;
+      }
+
+      .inv-pairing-option small {
+        color: var(--wc-text-secondary);
+      }
+
+      .inv-pairing-missing {
+        display: block;
+        margin-bottom: 12px;
+        color: var(--wc-text-secondary);
+      }
+
+      .inv-pairing-banner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin: 0 16px 8px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        background: var(--wc-hover);
+        font-size: 0.9em;
+        font-weight: 500;
+        color: var(--wc-text);
       }
 
       .inv-review-option small {
@@ -947,6 +1039,7 @@ export class InventoryDialog extends LitElement {
       this._historyItems = [];
       this._buyAgainOnly = false;
       this._editingHistoryId = "";
+      this._showPairingPicker = this.pairingMode;
     }
   }
 
@@ -1073,6 +1166,57 @@ export class InventoryDialog extends LitElement {
 
   private _foodLabel(id: string): string {
     return this._t(`foodCategory.${id}`);
+  }
+
+  // Picking a food clears every other filter first: a leftover saved type
+  // or rating filter would otherwise hide wines that pair, with nothing on
+  // screen saying why.
+  private _pickPairing(id: string) {
+    this._clearFilters();
+    this._foodFilter = id;
+    this._savePrefs();
+    this._showPairingPicker = false;
+  }
+
+  private _renderPairingPicker() {
+    if (!this._showPairingPicker) return nothing;
+    const counts = new Map<string, number>();
+    for (const w of this.wines) {
+      for (const id of new Set(splitMulti(w.food_pairings).map(categorizeFoodPairing))) {
+        counts.set(id, (counts.get(id) ?? 0) + 1);
+      }
+    }
+    const options = this._foodOptions();
+    const missing = this._winesWithoutPairings();
+    return html`
+      <div class="inv-confirm-overlay" @click=${() => (this._showPairingPicker = false)}>
+        <div class="inv-confirm-box inv-pairing-box" @click=${(e: Event) => e.stopPropagation()}>
+          <h3>${this._t("ui.inventory.pairingTitle")}</h3>
+          <p>${options.length ? this._t("ui.inventory.pairingIntro") : this._t("ui.inventory.pairingEmpty")}</p>
+          <div class="inv-pairing-grid">
+            ${options.map(
+              (id) => html`
+                <button class="inv-pairing-option" @click=${() => this._pickPairing(id)}>
+                  <span class="inv-pairing-icon">${FOOD_ICONS[id] ?? "🍽️"}</span>
+                  <span class="inv-pairing-label">${this._foodLabel(id)}</span>
+                  <small>${counts.get(id) ?? 0}</small>
+                </button>
+              `
+            )}
+          </div>
+          ${missing
+            ? html`<small class="inv-pairing-missing">${missing > 1
+                ? this._t("ui.inventory.missingPairingsHintMany", { n: missing })
+                : this._t("ui.inventory.missingPairingsHintOne", { n: missing })}</small>`
+            : nothing}
+          <div class="inv-confirm-btns">
+            <button class="inv-confirm-cancel" @click=${() => (this._showPairingPicker = false)}>
+              ${this._t("ui.common.cancel")}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   private _winesWithoutPairings(): number {
@@ -2586,6 +2730,17 @@ export class InventoryDialog extends LitElement {
 
           ${this._showFilters ? this._renderFilterPanel(missingPairings) : nothing}
 
+          ${this.pairingMode && this._foodFilter !== "all"
+            ? html`
+                <div class="inv-pairing-banner">
+                  <span>${FOOD_ICONS[this._foodFilter] ?? "🍽️"} ${this._t("ui.inventory.pairingBanner", { food: this._foodLabel(this._foodFilter) })}</span>
+                  <button class="inv-clear-filters" @click=${() => (this._showPairingPicker = true)}>
+                    ${this._t("ui.inventory.pairingChange")}
+                  </button>
+                </div>
+              `
+            : nothing}
+
           ${narrowed
             ? html`
                 <div class="inv-active-filters">
@@ -2757,6 +2912,7 @@ export class InventoryDialog extends LitElement {
 
           ${this._renderEnrichConfirm()}
           ${this._renderReviewChooser()}
+          ${this._renderPairingPicker()}
 
           <!-- CSV Import Mode Overlay -->
           ${this._confirmImport && this._pendingImport

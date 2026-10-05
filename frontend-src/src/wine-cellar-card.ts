@@ -96,6 +96,7 @@ export class WineCellarCard extends LitElement {
   @state() private _showVivinoAiSettings = false;
   @state() private _showWineList = false;
   @state() private _showInventory = false;
+  @state() private _inventoryPairing = false;
   private _findingsCache: {
     wines: Wine[];
     cabinets: Cabinet[];
@@ -2572,10 +2573,24 @@ export class WineCellarCard extends LitElement {
             <button
               class="btn btn-primary"
               style="font-size: 0.8em; padding: 5px 10px; background: #37474f;"
-              @click=${() => (this._showInventory = true)}
+              @click=${() => {
+                this._inventoryPairing = false;
+                this._showInventory = true;
+              }}
               title="${this._t("ui.card.inventoryTitle")}"
             >
               ${this._t("ui.card.inventoryBtn")}
+            </button>
+            <button
+              class="btn btn-primary"
+              style="font-size: 0.8em; padding: 5px 10px; background: #5d4037;"
+              @click=${() => {
+                this._inventoryPairing = true;
+                this._showInventory = true;
+              }}
+              title="${this._t("ui.card.pairingsTitle")}"
+            >
+              ${this._t("ui.card.pairingsBtn")}
             </button>
             <button
               class="btn btn-primary"
@@ -3191,6 +3206,7 @@ export class WineCellarCard extends LitElement {
           .currency=${this._metadataCurrency}
           .analyzing=${this._analyzing}
           .batchVivino=${this._batchVivino}
+          .pairingMode=${this._inventoryPairing}
           @close=${() => (this._showInventory = false)}
           @wine-updated=${() => this._loadData()}
           @locate-wine=${(e: CustomEvent) => {

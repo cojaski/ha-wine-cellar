@@ -408,20 +408,32 @@ export class CabinetGrid extends LitElement {
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
       }
 
-      /* Single-rack view: a quarter-size badge tucked into the top-left
-         corner instead of covering the middle of the label. */
+      /* Single-rack view: a short text pill ("Drink"/"Hold"/"Past") along
+         the bottom edge instead of covering the middle of the label. Same
+         colors as the badge; only the shape and position change. */
       :host([single]) .cell .disposition,
       :host([single]) .zone-bottle .disposition,
       :host([single]) .zone-shelf-dot .disposition {
-        top: 6%;
-        left: 6%;
-        transform: none;
-        width: 16%;
-        height: 16%;
-        min-width: 10px;
-        min-height: 10px;
-        font-size: 0;
+        top: auto;
+        bottom: 4%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: auto;
+        height: auto;
+        max-width: 92%;
+        padding: 2px 6px;
+        border-radius: 999px;
         border-width: 1px;
+        font-size: clamp(7px, 16cqi, 11px);
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* Lift the depth dots clear of the pill. */
+      :host([single]) .depth-dots {
+        bottom: 26%;
       }
 
       .zone-bottle:hover {
@@ -924,14 +936,17 @@ export class CabinetGrid extends LitElement {
     return currentYear >= peakStart && currentYear <= drinkEnd;
   }
 
-  // The classic D/H/P letter badge — only in "letter" mode. In "dot" mode
+  // The classic D/H/P letter badge (a "Drink"/"Hold"/"Past" pill in the
+  // single-rack view) — only in "letter" mode. In "dot" mode
   // there's no badge at all; _dispositionRingStyle below draws the status
   // as a thicker colored ring around the bottle instead, so the photo
   // stays uncovered.
   private _dispositionBadge(dispClass: string, disp: string, wine?: Wine, className = "disposition") {
     if (!dispClass || this.dispositionDisplay === "dot") return nothing;
     const peakClass = dispClass === "drink" && this._isInOrAfterPeakWindow(wine) ? "peak" : "";
-    return html`<span class="${className} ${dispClass} ${peakClass}">${disp}</span>`;
+    // Single-rack view has room for a word instead of the bare letter.
+    const text = this.single ? this._t(`ui.disposition.${dispClass}`) : disp;
+    return html`<span class="${className} ${dispClass} ${peakClass}">${text}</span>`;
   }
 
   // "dot" mode's ring: a thicker border colored by disposition (green/blue/
