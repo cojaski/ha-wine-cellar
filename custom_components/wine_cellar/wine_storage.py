@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Any
@@ -22,6 +23,18 @@ from .const import (
     STORAGE_VERSION,
 )
 from .disposition import DISPOSITION_SOURCE_AUTO, compute_disposition
+
+_LOGGER = logging.getLogger(__name__)
+
+# One-off data repairs that must run once per cellar, not on every load —
+# recorded under this top-level key once done.
+CONF_CLEANUPS_DONE = "cleanups_done"
+CLEANUP_VIVINO_EXPLORE = "vivino_explore_trending_v1"
+
+# A Vivino id shared by this many differently-named wines cannot be a real
+# match for all of them: it is one of the explore API's trending wines that
+# got attached to unrelated bottles (see _cleanup_vivino_explore_matches).
+_EXPLORE_GROUP_MIN_IDENTITIES = 3
 
 
 class WineCellarStorage:
@@ -93,19 +106,26 @@ class WineCellarStorage:
                 CONF_BUY_LIST: [],
                 CONF_WINE_HISTORY: [],
                 CONF_SETTINGS: {},
+                # A new cellar has no old bad data to repair.
+                CONF_CLEANUPS_DONE: [CLEANUP_VIVINO_EXPLORE],
             }
             await self.async_save()
         else:
             self._data = data
-            self._migrate()
+            if self._migrate():
+                await self.async_save()
 
-    def _migrate(self) -> None:
+    def _migrate(self) -> bool:
         """Bring loaded or restored data up to the current schema.
 
         Called on load *and* on restore: a backup file carries whatever shape
         the version that wrote it used, so restoring an old one without this
         would leave cabinets and wines missing fields until the next HA
         restart happened to re-run the load path.
+
+        Returns True when a one-off data repair changed something, so the
+        load path persists it right away instead of waiting for the next
+        unrelated save (and re-running the repair if HA restarts first).
         """
         # Migrate: ensure all cabinets have storage_rows and depth fields
         for cab in self._data.get(CONF_CABINETS, []):
@@ -170,6 +190,106 @@ class WineCellarStorage:
             self._data[CONF_BUY_LIST] = []
         if CONF_WINE_HISTORY not in self._data:
             self._data[CONF_WINE_HISTORY] = []
+
+        done = self._data.setdefault(CONF_CLEANUPS_DONE, [])
+        if CLEANUP_VIVINO_EXPLORE in done:
+            return False
+        done.append(CLEANUP_VIVINO_EXPLORE)
+        self._cleanup_vivino_explore_matches()
+        return True
+
+    def _cleanup_vivino_explore_matches(self) -> int:
+        """Undo Vivino data copied from the explore API's trending wines.
+
+        Vivino's explore API ignored the search text and always returned the
+        same few trending wines; a weak relevance check let one through
+        whenever it shared a grape name with the query, so its price, rating,
+        photo and id were written onto unrelated bottles (search_wine no
+        longer uses that API). The bottles it hit share one tell-tale sign:
+        the same vivino_id on wines with different names. A real id names one
+        wine, so a group of several differently-named wines on one id is
+        that trending bottle, and so is any value they hold in common.
+
+        Prices are cleared a second way as well: wines added from a scanned
+        wine list got the price but never the id, so a price seen in common
+        across such a group is cleared from any other wine carrying exactly
+        that price.
+
+        Bottles imported from the user's own Vivino account (source starts
+        with "vivino") are left alone — their id is the account sync's key.
+        Only fields whose value the group holds in common are cleared, so a
+        value the user corrected by hand afterwards survives. Returns how
+        many wines were changed.
+        """
+        def identity(w: dict[str, Any]) -> str:
+            return " ".join(f"{w.get('winery') or ''} {w.get('name') or ''}".lower().split())
+
+        candidates = [
+            w for w in self._data.get(CONF_WINES, [])
+            if not str(w.get("source", "")).startswith("vivino")
+        ]
+        groups: dict[str, list[dict[str, Any]]] = {}
+        for w in candidates:
+            if w.get("vivino_id"):
+                groups.setdefault(str(w["vivino_id"]), []).append(w)
+
+        def shared_values(group: list[dict[str, Any]], key: str) -> set[Any]:
+            """Values of `key` held by at least two distinct wine identities."""
+            seen: dict[Any, set[str]] = {}
+            for w in group:
+                val = w.get(key)
+                if val:
+                    seen.setdefault(val, set()).add(identity(w))
+            return {val for val, ids in seen.items() if len(ids) >= 2}
+
+        changed: dict[str, list[str]] = {}
+        bad_prices: set[Any] = set()
+        for group in groups.values():
+            if len({identity(w) for w in group}) < _EXPLORE_GROUP_MIN_IDENTITIES:
+                continue
+            group_prices = shared_values(group, "retail_price")
+            bad_prices |= group_prices
+            shared = {
+                key: shared_values(group, key)
+                for key in ("rating", "ratings_count", "image_url")
+            }
+            for w in group:
+                cleared = changed.setdefault(w["id"], [])
+                w["vivino_id"] = ""
+                cleared.append("vivino_id")
+                for key, values in shared.items():
+                    # Only a Vivino-hosted photo can have come from the match;
+                    # anything else is the user's own.
+                    if key == "image_url" and "vivino" not in str(w.get(key) or ""):
+                        continue
+                    if w.get(key) in values:
+                        w[key] = None if key != "image_url" else ""
+                        cleared.append(key)
+                # Report the wine as never looked up again, so the cellar's
+                # enrichment tracking offers it for a fresh Vivino refresh.
+                w["vivino_updated_at"] = None
+                w["vivino_checked_at"] = None
+
+        for w in candidates:
+            if w.get("retail_price") and w["retail_price"] in bad_prices:
+                w["retail_price"] = None
+                w["retail_price_currency"] = None
+                changed.setdefault(w["id"], []).append("retail_price")
+
+        by_id = {w["id"]: w for w in candidates}
+        for wine_id, fields in changed.items():
+            w = by_id[wine_id]
+            _LOGGER.warning(
+                "Cleared Vivino data copied from an unrelated wine on '%s %s' (%s): %s",
+                w.get("winery") or "", w.get("name") or "", w.get("vintage") or "NV",
+                ", ".join(fields),
+            )
+        if changed:
+            _LOGGER.warning(
+                "Vivino cleanup: repaired %d wine(s); a Vivino refresh will fill them in again",
+                len(changed),
+            )
+        return len(changed)
 
     async def async_save(self) -> None:
         """Save data to storage."""
@@ -761,6 +881,11 @@ class WineCellarStorage:
         # user's current metadata-language / AI-fallback configuration.
         if settings is not None:
             self._data[CONF_SETTINGS] = settings
+        # A backup written before the Vivino search fix carries the same bad
+        # matches the live data had, so the one-off cleanup runs again on it.
+        done = self._data.get(CONF_CLEANUPS_DONE, [])
+        if CLEANUP_VIVINO_EXPLORE in done:
+            done.remove(CLEANUP_VIVINO_EXPLORE)
         self._migrate()
         return {
             "wines": len(wines),
