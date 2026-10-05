@@ -85,6 +85,11 @@ def _register_static_path(hass: HomeAssistant) -> None:
     frontend_path = str(frontend_dir / "wine-cellar-card.js")
     versioned_url = f"/wine_cellar/wine-cellar-card-{FRONTEND_VERSION}.js"
     legacy_url = "/wine_cellar/wine-cellar-card.js"
+    # zxing barcode decoder, loaded by the card where the browser has no native
+    # BarcodeDetector (every iOS browser). Path must match ZXING_WASM_URL in
+    # barcode-scanner.ts.
+    zxing_url = "/wine_cellar/zxing_reader.wasm"
+    zxing_path = str(frontend_dir / "zxing_reader.wasm")
 
     # Bottle photos are served from disk rather than carried inside every wine
     # record. Cache headers are on here, unlike the card bundle: a photo file
@@ -100,6 +105,7 @@ def _register_static_path(hass: HomeAssistant) -> None:
                 [
                     StaticPathConfig(versioned_url, frontend_path, False),
                     StaticPathConfig(legacy_url, frontend_path, False),
+                    StaticPathConfig(zxing_url, zxing_path, False),
                     StaticPathConfig(photos.PHOTO_URL_PREFIX, photo_path, True),
                 ]
             )
@@ -109,6 +115,7 @@ def _register_static_path(hass: HomeAssistant) -> None:
             # Legacy HA
             hass.http.register_static_path(versioned_url, frontend_path, cache_headers=False)
             hass.http.register_static_path(legacy_url, frontend_path, cache_headers=False)
+            hass.http.register_static_path(zxing_url, zxing_path, cache_headers=False)
             hass.http.register_static_path(photos.PHOTO_URL_PREFIX, photo_path, cache_headers=True)
         except Exception:
             _LOGGER.warning("Could not register frontend static path")

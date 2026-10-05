@@ -3,11 +3,39 @@ import { customElement, property, state } from "lit/decorators.js";
 import { sharedStyles } from "../styles";
 import { cameraBlockedReason, describeCameraError } from "../utils/camera";
 import { t } from "../i18n";
+import {
+  BarcodeDetector as ZXingBarcodeDetector,
+  prepareZXingModule,
+} from "barcode-detector/ponyfill";
 
 declare global {
   interface Window {
     BarcodeDetector: any;
   }
+}
+
+const BARCODE_FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"] as const;
+
+// Served by the integration next to the card bundle (see __init__.py). Not the
+// library's default jsDelivr URL, so scanning works without internet access.
+const ZXING_WASM_URL = "/wine_cellar/zxing_reader.wasm";
+
+// WebKit has no BarcodeDetector at all — every iOS browser, the HA Companion
+// app included, https or not — so fall back to a zxing WASM decoder there.
+async function createBarcodeDetector(): Promise<any> {
+  if ("BarcodeDetector" in window) {
+    return new window.BarcodeDetector({ formats: BARCODE_FORMATS });
+  }
+  // Awaited so a failed WASM download surfaces here, not as every frame's
+  // detect() rejecting silently.
+  await prepareZXingModule({
+    overrides: {
+      locateFile: (path: string, prefix: string) =>
+        path.endsWith(".wasm") ? ZXING_WASM_URL : prefix + path,
+    },
+    fireImmediately: true,
+  });
+  return new ZXingBarcodeDetector({ formats: [...BARCODE_FORMATS] });
 }
 
 @customElement("barcode-scanner")
@@ -129,19 +157,6 @@ export class BarcodeScanner extends LitElement {
     if (this._scanning) return;
     this._error = "";
 
-    // Check for BarcodeDetector support
-    if (!("BarcodeDetector" in window)) {
-      this._error = this._t("ui.barcode.notSupported");
-      this.dispatchEvent(
-        new CustomEvent("scanner-error", {
-          detail: { error: this._error },
-          bubbles: true,
-          composed: true,
-        })
-      );
-      return;
-    }
-
     const blocked = cameraBlockedReason(this.hass?.language);
     if (blocked) {
       this._error = `${blocked} ${this._t("ui.barcode.enterManually")}`;
@@ -152,6 +167,27 @@ export class BarcodeScanner extends LitElement {
           composed: true,
         })
       );
+      return;
+    }
+
+    try {
+      this._detector = await createBarcodeDetector();
+    } catch (err) {
+      console.error("Barcode decoder failed to load", err);
+      this._error = this._t("ui.barcode.notSupported");
+      this.dispatchEvent(
+        new CustomEvent("scanner-error", {
+          detail: { error: this._error },
+          bubbles: true,
+          composed: true,
+        })
+      );
+      return;
+    }
+    // The first WASM load can take a moment; don't open the camera if the
+    // scanner was closed meanwhile.
+    if (!this.active) {
+      this._detector = null;
       return;
     }
 
@@ -167,10 +203,6 @@ export class BarcodeScanner extends LitElement {
         video.srcObject = this._stream;
         await video.play();
       }
-
-      this._detector = new (window as any).BarcodeDetector({
-        formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"],
-      });
 
       this._scanning = true;
       this._scanFrame();
