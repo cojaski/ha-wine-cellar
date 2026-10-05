@@ -884,7 +884,8 @@ var ui$1 = {
 		replace: "replace",
 		"new": "new",
 		colonSep: ": ",
-		clearSearch: "Clear search"
+		clearSearch: "Clear search",
+		save: "Save"
 	},
 	disposition: {
 		drink: "Drink",
@@ -1038,7 +1039,7 @@ var ui$1 = {
 		tabInventory: "Inventory",
 		tabHistory: "History",
 		loadingHistory: "Loading history...",
-		noHistory: "No removal history yet",
+		noHistory: "No history yet — bottles you drink or remove show up here",
 		winesRemoved: "{n} wines removed",
 		restoreBtn: "Restore",
 		clearHistoryBtn: "Clear History",
@@ -1197,7 +1198,18 @@ var ui$1 = {
 		racksWord: "racks",
 		buyListItemsWord: "buy list items",
 		createdLabel: "Created: {date}",
-		restoreNowBtn: "Restore Now"
+		restoreNowBtn: "Restore Now",
+		buyAgainOnly: "🛒 Buy again only",
+		noBuyAgain: "No wines marked “buy again” yet",
+		buyAgainTitle: "Buy again — on your Buy List",
+		addNotesBtn: "📝 Add notes",
+		editNotesBtn: "📝 Notes",
+		myRatingLabel: "My rating",
+		drinkNotesPlaceholder: "How was it? What did you pair it with?",
+		buyAgainLabel: "Buy again?",
+		buyAgainHint: "Adds it to your Buy List",
+		historySaved: "Saved",
+		historySaveFailed: "Failed to save"
 	},
 	addWine: {
 		title: "Add Wine",
@@ -1389,7 +1401,14 @@ var ui$1 = {
 		chamberingReady: "🌡️ Ready to serve",
 		chamberingWarmUp: "🌡️ Take out {duration} before serving",
 		chamberingChill: "🧊 Chill ~15–20 min before serving",
-		aiLabel: "AI"
+		aiLabel: "AI",
+		drinkBtn: "Drink",
+		drinkTitle: "🍷 Cheers!",
+		drinkIntro: "Log how it was — or skip and add notes later from History.",
+		drinkNotesPlaceholder: "How was it? What did you pair it with?",
+		buyAgainLabel: "Buy again?",
+		buyAgainHint: "Adds it to your Buy List",
+		drinkConfirmBtn: "Drink it"
 	},
 	rack: {
 		failedToAddRack: "Failed to add rack.",
@@ -1602,7 +1621,9 @@ var toast$1 = {
 	tapToPlace: "Tap a cell to place \"{name}\"",
 	movedToCellar: "Moved \"{name}\" to cellar",
 	moveToCellarFailed: "Failed to move to cellar",
-	tapToMove: "Tap a cell to move \"{name}\""
+	tapToMove: "Tap a cell to move \"{name}\"",
+	wineDrunk: "Cheers! {name} is now in History",
+	removeWineFailed: "Failed to remove wine"
 };
 var en = {
 	wineType: wineType$1,
@@ -1682,7 +1703,8 @@ var ui = {
 		replace: "remplacer",
 		"new": "nouveau{plural}",
 		colonSep: " : ",
-		clearSearch: "Effacer la recherche"
+		clearSearch: "Effacer la recherche",
+		save: "Enregistrer"
 	},
 	disposition: {
 		drink: "Boire",
@@ -1836,7 +1858,7 @@ var ui = {
 		tabInventory: "Inventaire",
 		tabHistory: "Historique",
 		loadingHistory: "Chargement de l'historique...",
-		noHistory: "Aucun historique de retrait pour le moment",
+		noHistory: "Aucun historique — les bouteilles bues ou retirées apparaissent ici",
 		winesRemoved: "{n} vins retirés",
 		restoreBtn: "Restaurer",
 		clearHistoryBtn: "Effacer l'historique",
@@ -1995,7 +2017,18 @@ var ui = {
 		racksWord: "racks",
 		buyListItemsWord: "éléments de liste d'achat",
 		createdLabel: "Créée le : {date}",
-		restoreNowBtn: "Restaurer maintenant"
+		restoreNowBtn: "Restaurer maintenant",
+		buyAgainOnly: "🛒 À racheter uniquement",
+		noBuyAgain: "Aucun vin marqué « à racheter » pour le moment",
+		buyAgainTitle: "À racheter — dans votre liste d'achat",
+		addNotesBtn: "📝 Ajouter des notes",
+		editNotesBtn: "📝 Notes",
+		myRatingLabel: "Ma note",
+		drinkNotesPlaceholder: "Comment était-il ? Avec quoi l'avez-vous accompagné ?",
+		buyAgainLabel: "À racheter ?",
+		buyAgainHint: "L'ajoute à votre liste d'achat",
+		historySaved: "Enregistré",
+		historySaveFailed: "Échec de l'enregistrement"
 	},
 	addWine: {
 		title: "Ajouter un vin",
@@ -2187,7 +2220,14 @@ var ui = {
 		chamberingReady: "🌡️ Prêt à servir",
 		chamberingWarmUp: "🌡️ Sortir {duration} avant de servir",
 		chamberingChill: "🧊 Rafraîchir ~15–20 min avant de servir",
-		aiLabel: "IA"
+		aiLabel: "IA",
+		drinkBtn: "Boire",
+		drinkTitle: "🍷 Santé !",
+		drinkIntro: "Notez vos impressions — ou passez et ajoutez-les plus tard depuis l'Historique.",
+		drinkNotesPlaceholder: "Comment était-il ? Avec quoi l'avez-vous accompagné ?",
+		buyAgainLabel: "À racheter ?",
+		buyAgainHint: "L'ajoute à votre liste d'achat",
+		drinkConfirmBtn: "Boire"
 	},
 	rack: {
 		failedToAddRack: "Échec de l'ajout du rack.",
@@ -2400,7 +2440,9 @@ var toast = {
 	tapToPlace: "Touchez une case pour placer « {name} »",
 	movedToCellar: "« {name} » déplacé vers la cave",
 	moveToCellarFailed: "Échec du déplacement vers la cave",
-	tapToMove: "Touchez une case pour déplacer « {name} »"
+	tapToMove: "Touchez une case pour déplacer « {name} »",
+	wineDrunk: "Santé ! {name} est maintenant dans l'Historique",
+	removeWineFailed: "Échec du retrait du vin"
 };
 var fr = {
 	wineType: wineType,
@@ -6013,6 +6055,10 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
         this._scanningLabel = false;
         this._showLabelCamera = false;
         this._showRemoveConfirm = false;
+        this._showDrinkDialog = false;
+        this._drinkRating = 0;
+        this._drinkNotes = "";
+        this._drinkBuyAgain = false;
         this._pendingVivinoImage = null;
         this._showPhotoCamera = false;
         this._photoBusy = false;
@@ -6193,6 +6239,32 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
             // Show reason prompt for cellar wines
             this._showRemoveConfirm = true;
         }
+    }
+    _onDrink() {
+        if (!this.wine)
+            return;
+        this._drinkRating = this.wine.user_rating ?? 0;
+        this._drinkNotes = "";
+        this._drinkBuyAgain = false;
+        this._showDrinkDialog = true;
+    }
+    _confirmDrink() {
+        if (!this.wine)
+            return;
+        this.dispatchEvent(new CustomEvent("remove-wine", {
+            detail: {
+                wine_id: this.wine.id,
+                reason: "drank",
+                name: this.wine.name,
+                personal_rating: this._drinkRating || null,
+                drink_notes: this._drinkNotes.trim(),
+                buy_again: this._drinkBuyAgain,
+            },
+            bubbles: true,
+            composed: true,
+        }));
+        this._showDrinkDialog = false;
+        this._close();
     }
     _confirmRemove(reason) {
         if (!this.wine)
@@ -6904,6 +6976,10 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
                     : A$1}
                       `
                 : A$1}
+                  ${this.mode === "cellar"
+                ? b$1 `<button class="btn btn-primary" style="background:#722F37"
+                        @click=${this._onDrink}>🍷 ${this._t("ui.wineDetail.drinkBtn")}</button>`
+                : A$1}
                   <button class="btn btn-primary" style="background:#c62828"
                     @click=${this._onRemove}>✕ ${this._t("ui.wineDetail.removeBtn")}</button>
                 </div>
@@ -7129,6 +7205,40 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
                   style="margin-top:12px;padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.8em"
                   @click=${() => (this._showRemoveConfirm = false)}
                 >${this._t("ui.common.cancel")}</button>
+              </div>
+            </div>
+          ` : A$1}
+          ${this._showDrinkDialog ? b$1 `
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10;border-radius:16px">
+              <div style="background:var(--wc-bg);border-radius:12px;padding:24px;max-width:340px;width:90%;text-align:center" @click=${(e) => e.stopPropagation()}>
+                <h3 style="margin:0 0 4px;font-size:1em;color:var(--wc-text)">${this._t("ui.wineDetail.drinkTitle")}</h3>
+                <p style="margin:0 0 12px;font-size:0.85em;color:var(--wc-text-secondary)">${this._t("ui.wineDetail.drinkIntro")}</p>
+                <div style="margin-bottom:10px">
+                  <star-rating
+                    .value=${this._drinkRating}
+                    @rating-change=${(e) => (this._drinkRating = e.detail.value)}
+                  ></star-rating>
+                </div>
+                <textarea
+                  rows="3"
+                  style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--wc-border);background:var(--wc-surface, transparent);color:var(--wc-text);font:inherit;font-size:0.85em;resize:vertical"
+                  placeholder="${this._t("ui.wineDetail.drinkNotesPlaceholder")}"
+                  .value=${this._drinkNotes}
+                  @input=${(e) => (this._drinkNotes = e.target.value)}
+                ></textarea>
+                <label style="display:flex;align-items:center;gap:8px;margin:10px 0 16px;font-size:0.9em;color:var(--wc-text);cursor:pointer;text-align:left">
+                  <input type="checkbox" .checked=${this._drinkBuyAgain}
+                    @change=${(e) => (this._drinkBuyAgain = e.target.checked)} />
+                  <span>🛒 ${this._t("ui.wineDetail.buyAgainLabel")}
+                    <small style="display:block;color:var(--wc-text-secondary)">${this._t("ui.wineDetail.buyAgainHint")}</small></span>
+                </label>
+                <div style="display:flex;gap:8px;justify-content:center">
+                  <button class="btn btn-primary" style="background:#722F37" @click=${this._confirmDrink}>🍷 ${this._t("ui.wineDetail.drinkConfirmBtn")}</button>
+                  <button
+                    style="padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.8em"
+                    @click=${() => (this._showDrinkDialog = false)}
+                  >${this._t("ui.common.cancel")}</button>
+                </div>
               </div>
             </div>
           ` : A$1}
@@ -7841,6 +7951,18 @@ __decorate([
 __decorate([
     r$1()
 ], WineDetailDialog.prototype, "_showRemoveConfirm", void 0);
+__decorate([
+    r$1()
+], WineDetailDialog.prototype, "_showDrinkDialog", void 0);
+__decorate([
+    r$1()
+], WineDetailDialog.prototype, "_drinkRating", void 0);
+__decorate([
+    r$1()
+], WineDetailDialog.prototype, "_drinkNotes", void 0);
+__decorate([
+    r$1()
+], WineDetailDialog.prototype, "_drinkBuyAgain", void 0);
 __decorate([
     r$1()
 ], WineDetailDialog.prototype, "_pendingVivinoImage", void 0);
@@ -15207,6 +15329,12 @@ let InventoryDialog = class InventoryDialog extends i$1 {
         this._viewMode = "inventory";
         this._historyItems = [];
         this._historyLoading = false;
+        this._buyAgainOnly = false;
+        this._editingHistoryId = "";
+        this._editRating = 0;
+        this._editNotes = "";
+        this._editBuyAgain = false;
+        this._historySaving = false;
     }
     // HA websocket errors can arrive as a plain string, an Error, or a
     // {code, message} object depending on where they're thrown from — a bare
@@ -15258,6 +15386,8 @@ let InventoryDialog = class InventoryDialog extends i$1 {
             this._restoreData = null;
             this._viewMode = "inventory";
             this._historyItems = [];
+            this._buyAgainOnly = false;
+            this._editingHistoryId = "";
         }
     }
     _close() {
@@ -15646,6 +15776,69 @@ let InventoryDialog = class InventoryDialog extends i$1 {
             this._statusMsg = this._t("ui.inventory.restoreWineFailed");
         }
     }
+    _startEditHistory(item) {
+        if (this._editingHistoryId === item.id) {
+            this._editingHistoryId = "";
+            return;
+        }
+        this._editingHistoryId = item.id;
+        this._editRating = item.personal_rating ?? 0;
+        this._editNotes = item.drink_notes || "";
+        this._editBuyAgain = !!item.buy_again;
+    }
+    async _saveHistoryEntry(historyId) {
+        this._historySaving = true;
+        try {
+            const result = await this.hass.callWS({
+                type: "wine_cellar/update_history_entry",
+                history_id: historyId,
+                personal_rating: this._editRating || null,
+                drink_notes: this._editNotes.trim(),
+                buy_again: this._editBuyAgain,
+            });
+            this._historyItems = this._historyItems.map((i) => (i.id === historyId ? result.entry : i));
+            this._editingHistoryId = "";
+            this._statusMsg = this._t("ui.inventory.historySaved");
+            // Buy again changes the Buy List the card shows.
+            this.dispatchEvent(new CustomEvent("wine-updated", { bubbles: true, composed: true }));
+        }
+        catch (err) {
+            console.error("Failed to save history entry", err);
+            this._statusMsg = this._t("ui.inventory.historySaveFailed");
+        }
+        this._historySaving = false;
+    }
+    _renderHistoryEditor(item) {
+        return b$1 `
+      <div class="inv-history-editor">
+        <div style="display:flex;align-items:center;gap:8px;font-size:0.85em;color:var(--wc-text-secondary)">
+          ${this._t("ui.inventory.myRatingLabel")}
+          <star-rating
+            .value=${this._editRating}
+            .size=${22}
+            @rating-change=${(e) => (this._editRating = e.detail.value)}
+          ></star-rating>
+        </div>
+        <textarea
+          rows="3"
+          placeholder="${this._t("ui.inventory.drinkNotesPlaceholder")}"
+          .value=${this._editNotes}
+          @input=${(e) => (this._editNotes = e.target.value)}
+        ></textarea>
+        <label>
+          <input type="checkbox" .checked=${this._editBuyAgain}
+            @change=${(e) => (this._editBuyAgain = e.target.checked)} />
+          <span>🛒 ${this._t("ui.inventory.buyAgainLabel")}
+            <small style="color:var(--wc-text-secondary)"> — ${this._t("ui.inventory.buyAgainHint")}</small></span>
+        </label>
+        <div class="inv-editor-btns">
+          <button class="inv-btn" @click=${() => (this._editingHistoryId = "")}>${this._t("ui.common.cancel")}</button>
+          <button class="inv-btn active" ?disabled=${this._historySaving}
+            @click=${() => this._saveHistoryEntry(item.id)}>${this._t("ui.common.save")}</button>
+        </div>
+      </div>
+    `;
+    }
     _formatReason(reason) {
         const labels = getRemovalReasons(this.hass?.language);
         return labels.find((r) => r.id === reason)?.label || reason;
@@ -15673,26 +15866,52 @@ let InventoryDialog = class InventoryDialog extends i$1 {
         </div>
       `;
         }
+        const buyAgainCount = this._historyItems.filter((i) => i.buy_again).length;
+        const items = this._buyAgainOnly ? this._historyItems.filter((i) => i.buy_again) : this._historyItems;
         return b$1 `
       ${this._renderStorageInfo()}
+      <div class="inv-history-filter">
+        <button class="inv-btn ${this._buyAgainOnly ? "active" : ""}"
+          @click=${() => (this._buyAgainOnly = !this._buyAgainOnly)}
+        >${this._t("ui.inventory.buyAgainOnly")} (${buyAgainCount})</button>
+      </div>
       <div class="inv-list">
-        ${this._historyItems.map(item => b$1 `
+        ${items.length === 0
+            ? b$1 `<div class="inv-empty">${this._t("ui.inventory.noBuyAgain")}</div>`
+            : A$1}
+        ${items.map(item => b$1 `
           <div class="inv-history-item">
             ${item.image_url
             ? b$1 `<img class="inv-thumb" src="${item.image_url}" alt="" loading="lazy" />`
             : b$1 `<div class="inv-dot" style="background:${WINE_TYPE_COLORS[item.type] || "#999"}"></div>`}
             <div class="inv-info">
-              <div class="inv-name">${item.name}</div>
+              <div class="inv-name">
+                ${item.buy_again
+            ? b$1 `<span class="inv-buy-again" title="${this._t("ui.inventory.buyAgainTitle")}">🛒</span>`
+            : A$1}${item.name}
+              </div>
               <div class="inv-meta">
                 ${item.winery}${item.vintage ? ` · ${item.vintage}` : ""}
                 · <span class="inv-reason-badge">${this._formatReason(item.reason)}</span>
               </div>
+              ${item.personal_rating
+            ? b$1 `<star-rating .value=${item.personal_rating} .size=${14} readonly></star-rating>`
+            : A$1}
+              ${item.drink_notes ? b$1 `<div class="inv-drink-notes">${item.drink_notes}</div>` : A$1}
             </div>
             <div class="inv-right">
               ${item.price ? b$1 `<div class="inv-price">${this.currency} ${item.price.toFixed(0)}</div>` : A$1}
               <div class="inv-location">${this._formatDate(item.removed_at)}</div>
-              <button class="inv-btn" style="margin-top:4px" @click=${() => this._restoreFromHistory(item.id)}>${this._t("ui.inventory.restoreBtn")}</button>
+              <div style="display:flex;flex-direction:column;gap:4px;margin-top:4px;align-items:flex-end">
+                <button class="inv-btn" @click=${() => this._startEditHistory(item)}>
+                  ${item.drink_notes || item.personal_rating
+            ? this._t("ui.inventory.editNotesBtn")
+            : this._t("ui.inventory.addNotesBtn")}
+                </button>
+                <button class="inv-btn" @click=${() => this._restoreFromHistory(item.id)}>${this._t("ui.inventory.restoreBtn")}</button>
+              </div>
             </div>
+            ${this._editingHistoryId === item.id ? this._renderHistoryEditor(item) : A$1}
           </div>
         `)}
       </div>
@@ -17632,6 +17851,75 @@ InventoryDialog.styles = [
         border-bottom: none;
       }
 
+      .inv-history-item {
+        flex-wrap: wrap;
+      }
+
+      .inv-buy-again {
+        margin-right: 4px;
+        cursor: help;
+      }
+
+      .inv-drink-notes {
+        font-size: 0.78em;
+        font-style: italic;
+        color: var(--wc-text-secondary);
+        margin-top: 3px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        white-space: pre-line;
+      }
+
+      .inv-history-editor {
+        flex-basis: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px 0 2px;
+      }
+
+      .inv-history-editor textarea {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid var(--wc-border);
+        background: transparent;
+        color: var(--wc-text);
+        font: inherit;
+        font-size: 0.85em;
+        resize: vertical;
+      }
+
+      .inv-history-editor label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85em;
+        color: var(--wc-text);
+        cursor: pointer;
+      }
+
+      .inv-history-editor .inv-editor-btns {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .inv-history-filter {
+        display: flex;
+        justify-content: flex-end;
+        padding: 8px 12px 0;
+      }
+
+      .inv-btn.active {
+        background: var(--wc-primary);
+        border-color: var(--wc-primary);
+        color: #fff;
+      }
+
       .inv-reason-badge {
         display: inline-block;
         padding: 2px 8px;
@@ -17818,6 +18106,24 @@ __decorate([
 __decorate([
     r$1()
 ], InventoryDialog.prototype, "_historyLoading", void 0);
+__decorate([
+    r$1()
+], InventoryDialog.prototype, "_buyAgainOnly", void 0);
+__decorate([
+    r$1()
+], InventoryDialog.prototype, "_editingHistoryId", void 0);
+__decorate([
+    r$1()
+], InventoryDialog.prototype, "_editRating", void 0);
+__decorate([
+    r$1()
+], InventoryDialog.prototype, "_editNotes", void 0);
+__decorate([
+    r$1()
+], InventoryDialog.prototype, "_editBuyAgain", void 0);
+__decorate([
+    r$1()
+], InventoryDialog.prototype, "_historySaving", void 0);
 InventoryDialog = __decorate([
     t$2("inventory-dialog")
 ], InventoryDialog);
@@ -20076,15 +20382,19 @@ let WineCellarCard = class WineCellarCard extends i$1 {
     }
     async _onRemoveWine(e) {
         try {
-            await this.hass.callWS({
-                type: "wine_cellar/remove_wine",
-                wine_id: e.detail.wine_id,
-                reason: e.detail.reason || "other",
-            });
+            const { wine_id, reason, name, personal_rating, drink_notes, buy_again } = e.detail;
+            const msg = { type: "wine_cellar/remove_wine", wine_id, reason: reason || "other" };
+            // Only the Drink button sends a tasting log.
+            if (buy_again !== undefined)
+                Object.assign(msg, { personal_rating, drink_notes, buy_again });
+            await this.hass.callWS(msg);
             await this._loadData();
+            if (reason === "drank" && name)
+                this._showToast(this._t("toast.wineDrunk", { name }));
         }
         catch (err) {
             console.error("Failed to remove wine", err);
+            this._showToast(this._t("toast.removeWineFailed"));
         }
     }
     async _onWineAdded() {

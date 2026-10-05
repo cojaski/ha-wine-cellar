@@ -267,6 +267,11 @@ export interface WineHistoryItem {
   added_at: string;
   removed_at: string;
   reason: string;
+  // Tasting log, filled by the Drink button or later from History.
+  personal_rating?: number | null;
+  drink_notes?: string;
+  buy_again?: boolean;
+  buy_list_item_id?: string;
 }
 
 export const REMOVAL_REASONS = [

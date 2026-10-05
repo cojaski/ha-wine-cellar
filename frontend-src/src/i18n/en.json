@@ -66,7 +66,8 @@
       "replace": "replace",
       "new": "new",
       "colonSep": ": ",
-      "clearSearch": "Clear search"
+      "clearSearch": "Clear search",
+      "save": "Save"
     },
     "disposition": {
       "drink": "Drink",
@@ -220,7 +221,7 @@
       "tabInventory": "Inventory",
       "tabHistory": "History",
       "loadingHistory": "Loading history...",
-      "noHistory": "No removal history yet",
+      "noHistory": "No history yet — bottles you drink or remove show up here",
       "winesRemoved": "{n} wines removed",
       "restoreBtn": "Restore",
       "clearHistoryBtn": "Clear History",
@@ -379,7 +380,18 @@
       "racksWord": "racks",
       "buyListItemsWord": "buy list items",
       "createdLabel": "Created: {date}",
-      "restoreNowBtn": "Restore Now"
+      "restoreNowBtn": "Restore Now",
+      "buyAgainOnly": "🛒 Buy again only",
+      "noBuyAgain": "No wines marked “buy again” yet",
+      "buyAgainTitle": "Buy again — on your Buy List",
+      "addNotesBtn": "📝 Add notes",
+      "editNotesBtn": "📝 Notes",
+      "myRatingLabel": "My rating",
+      "drinkNotesPlaceholder": "How was it? What did you pair it with?",
+      "buyAgainLabel": "Buy again?",
+      "buyAgainHint": "Adds it to your Buy List",
+      "historySaved": "Saved",
+      "historySaveFailed": "Failed to save"
     },
     "addWine": {
       "title": "Add Wine",
@@ -571,7 +583,14 @@
       "chamberingReady": "🌡️ Ready to serve",
       "chamberingWarmUp": "🌡️ Take out {duration} before serving",
       "chamberingChill": "🧊 Chill ~15–20 min before serving",
-      "aiLabel": "AI"
+      "aiLabel": "AI",
+      "drinkBtn": "Drink",
+      "drinkTitle": "🍷 Cheers!",
+      "drinkIntro": "Log how it was — or skip and add notes later from History.",
+      "drinkNotesPlaceholder": "How was it? What did you pair it with?",
+      "buyAgainLabel": "Buy again?",
+      "buyAgainHint": "Adds it to your Buy List",
+      "drinkConfirmBtn": "Drink it"
     },
     "rack": {
       "failedToAddRack": "Failed to add rack.",
@@ -784,6 +803,8 @@
     "tapToPlace": "Tap a cell to place \"{name}\"",
     "movedToCellar": "Moved \"{name}\" to cellar",
     "moveToCellarFailed": "Failed to move to cellar",
-    "tapToMove": "Tap a cell to move \"{name}\""
+    "tapToMove": "Tap a cell to move \"{name}\"",
+    "wineDrunk": "Cheers! {name} is now in History",
+    "removeWineFailed": "Failed to remove wine"
   }
 }
