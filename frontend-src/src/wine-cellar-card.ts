@@ -2476,14 +2476,16 @@ export class WineCellarCard extends LitElement {
 
   private async _onRemoveWine(e: CustomEvent) {
     try {
-      await this.hass.callWS({
-        type: "wine_cellar/remove_wine",
-        wine_id: e.detail.wine_id,
-        reason: e.detail.reason || "other",
-      });
+      const { wine_id, reason, name, personal_rating, drink_notes, buy_again } = e.detail;
+      const msg: Record<string, unknown> = { type: "wine_cellar/remove_wine", wine_id, reason: reason || "other" };
+      // Only the Drink button sends a tasting log.
+      if (buy_again !== undefined) Object.assign(msg, { personal_rating, drink_notes, buy_again });
+      await this.hass.callWS(msg);
       await this._loadData();
+      if (reason === "drank" && name) this._showToast(this._t("toast.wineDrunk", { name }));
     } catch (err) {
       console.error("Failed to remove wine", err);
+      this._showToast(this._t("toast.removeWineFailed"));
     }
   }
 

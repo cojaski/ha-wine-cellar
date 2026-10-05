@@ -38,6 +38,10 @@ export class WineDetailDialog extends LitElement {
   @state() private _scanningLabel = false;
   @state() private _showLabelCamera = false;
   @state() private _showRemoveConfirm = false;
+  @state() private _showDrinkDialog = false;
+  @state() private _drinkRating = 0;
+  @state() private _drinkNotes = "";
+  @state() private _drinkBuyAgain = false;
   @state() private _pendingVivinoImage: string | null = null;
   @state() private _showPhotoCamera = false;
   @state() private _photoBusy = false;
@@ -769,6 +773,34 @@ export class WineDetailDialog extends LitElement {
     }
   }
 
+  private _onDrink() {
+    if (!this.wine) return;
+    this._drinkRating = this.wine.user_rating ?? 0;
+    this._drinkNotes = "";
+    this._drinkBuyAgain = false;
+    this._showDrinkDialog = true;
+  }
+
+  private _confirmDrink() {
+    if (!this.wine) return;
+    this.dispatchEvent(
+      new CustomEvent("remove-wine", {
+        detail: {
+          wine_id: this.wine.id,
+          reason: "drank",
+          name: this.wine.name,
+          personal_rating: this._drinkRating || null,
+          drink_notes: this._drinkNotes.trim(),
+          buy_again: this._drinkBuyAgain,
+        },
+        bubbles: true,
+        composed: true,
+      })
+    );
+    this._showDrinkDialog = false;
+    this._close();
+  }
+
   private _confirmRemove(reason: string) {
     if (!this.wine) return;
     this.dispatchEvent(
@@ -1473,6 +1505,10 @@ export class WineDetailDialog extends LitElement {
                           : nothing}
                       `
                     : nothing}
+                  ${this.mode === "cellar"
+                    ? html`<button class="btn btn-primary" style="background:#722F37"
+                        @click=${this._onDrink}>🍷 ${this._t("ui.wineDetail.drinkBtn")}</button>`
+                    : nothing}
                   <button class="btn btn-primary" style="background:#c62828"
                     @click=${this._onRemove}>✕ ${this._t("ui.wineDetail.removeBtn")}</button>
                 </div>
@@ -1704,6 +1740,40 @@ export class WineDetailDialog extends LitElement {
                   style="margin-top:12px;padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.8em"
                   @click=${() => (this._showRemoveConfirm = false)}
                 >${this._t("ui.common.cancel")}</button>
+              </div>
+            </div>
+          ` : nothing}
+          ${this._showDrinkDialog ? html`
+            <div style="position:absolute;inset:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10;border-radius:16px">
+              <div style="background:var(--wc-bg);border-radius:12px;padding:24px;max-width:340px;width:90%;text-align:center" @click=${(e: Event) => e.stopPropagation()}>
+                <h3 style="margin:0 0 4px;font-size:1em;color:var(--wc-text)">${this._t("ui.wineDetail.drinkTitle")}</h3>
+                <p style="margin:0 0 12px;font-size:0.85em;color:var(--wc-text-secondary)">${this._t("ui.wineDetail.drinkIntro")}</p>
+                <div style="margin-bottom:10px">
+                  <star-rating
+                    .value=${this._drinkRating}
+                    @rating-change=${(e: CustomEvent) => (this._drinkRating = e.detail.value)}
+                  ></star-rating>
+                </div>
+                <textarea
+                  rows="3"
+                  style="width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--wc-border);background:var(--wc-surface, transparent);color:var(--wc-text);font:inherit;font-size:0.85em;resize:vertical"
+                  placeholder="${this._t("ui.wineDetail.drinkNotesPlaceholder")}"
+                  .value=${this._drinkNotes}
+                  @input=${(e: Event) => (this._drinkNotes = (e.target as HTMLTextAreaElement).value)}
+                ></textarea>
+                <label style="display:flex;align-items:center;gap:8px;margin:10px 0 16px;font-size:0.9em;color:var(--wc-text);cursor:pointer;text-align:left">
+                  <input type="checkbox" .checked=${this._drinkBuyAgain}
+                    @change=${(e: Event) => (this._drinkBuyAgain = (e.target as HTMLInputElement).checked)} />
+                  <span>🛒 ${this._t("ui.wineDetail.buyAgainLabel")}
+                    <small style="display:block;color:var(--wc-text-secondary)">${this._t("ui.wineDetail.buyAgainHint")}</small></span>
+                </label>
+                <div style="display:flex;gap:8px;justify-content:center">
+                  <button class="btn btn-primary" style="background:#722F37" @click=${this._confirmDrink}>🍷 ${this._t("ui.wineDetail.drinkConfirmBtn")}</button>
+                  <button
+                    style="padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.8em"
+                    @click=${() => (this._showDrinkDialog = false)}
+                  >${this._t("ui.common.cancel")}</button>
+                </div>
               </div>
             </div>
           ` : nothing}

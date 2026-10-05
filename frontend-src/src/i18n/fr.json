@@ -45,7 +45,8 @@
       "replace": "remplacer",
       "new": "nouveau{plural}",
       "colonSep": " : ",
-      "clearSearch": "Effacer la recherche"
+      "clearSearch": "Effacer la recherche",
+      "save": "Enregistrer"
     },
     "disposition": {
       "drink": "Boire",
@@ -199,7 +200,7 @@
       "tabInventory": "Inventaire",
       "tabHistory": "Historique",
       "loadingHistory": "Chargement de l'historique...",
-      "noHistory": "Aucun historique de retrait pour le moment",
+      "noHistory": "Aucun historique — les bouteilles bues ou retirées apparaissent ici",
       "winesRemoved": "{n} vins retirés",
       "restoreBtn": "Restaurer",
       "clearHistoryBtn": "Effacer l'historique",
@@ -358,7 +359,18 @@
       "racksWord": "racks",
       "buyListItemsWord": "éléments de liste d'achat",
       "createdLabel": "Créée le : {date}",
-      "restoreNowBtn": "Restaurer maintenant"
+      "restoreNowBtn": "Restaurer maintenant",
+      "buyAgainOnly": "🛒 À racheter uniquement",
+      "noBuyAgain": "Aucun vin marqué « à racheter » pour le moment",
+      "buyAgainTitle": "À racheter — dans votre liste d'achat",
+      "addNotesBtn": "📝 Ajouter des notes",
+      "editNotesBtn": "📝 Notes",
+      "myRatingLabel": "Ma note",
+      "drinkNotesPlaceholder": "Comment était-il ? Avec quoi l'avez-vous accompagné ?",
+      "buyAgainLabel": "À racheter ?",
+      "buyAgainHint": "L'ajoute à votre liste d'achat",
+      "historySaved": "Enregistré",
+      "historySaveFailed": "Échec de l'enregistrement"
     },
     "addWine": {
       "title": "Ajouter un vin",
@@ -548,7 +560,14 @@
       "chamberingReady": "🌡️ Prêt à servir",
       "chamberingWarmUp": "🌡️ Sortir {duration} avant de servir",
       "chamberingChill": "🧊 Rafraîchir ~15–20 min avant de servir",
-      "aiLabel": "IA"
+      "aiLabel": "IA",
+      "drinkBtn": "Boire",
+      "drinkTitle": "🍷 Santé !",
+      "drinkIntro": "Notez vos impressions — ou passez et ajoutez-les plus tard depuis l'Historique.",
+      "drinkNotesPlaceholder": "Comment était-il ? Avec quoi l'avez-vous accompagné ?",
+      "buyAgainLabel": "À racheter ?",
+      "buyAgainHint": "L'ajoute à votre liste d'achat",
+      "drinkConfirmBtn": "Boire"
     },
     "rack": {
       "failedToAddRack": "Échec de l'ajout du rack.",
@@ -761,6 +780,8 @@
     "tapToPlace": "Touchez une case pour placer « {name} »",
     "movedToCellar": "« {name} » déplacé vers la cave",
     "moveToCellarFailed": "Échec du déplacement vers la cave",
-    "tapToMove": "Touchez une case pour déplacer « {name} »"
+    "tapToMove": "Touchez une case pour déplacer « {name} »",
+    "wineDrunk": "Santé ! {name} est maintenant dans l'Historique",
+    "removeWineFailed": "Échec du retrait du vin"
   }
 }
