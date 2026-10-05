@@ -1,7 +1,7 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { WineType, getSelectableWineTypes } from "../models";
-import { sharedStyles, touchStyles } from "../styles";
+import { sharedStyles, touchStyles, dialogClose } from "../styles";
 import { t } from "../i18n";
 
 @customElement("vivino-ai-settings-dialog")
@@ -63,7 +63,7 @@ export class VivinoAiSettingsDialog extends LitElement {
         padding: 3px 8px;
         border-radius: 8px;
         border: 1px solid var(--wc-border);
-        background: var(--wc-bg);
+        background: var(--wc-field-bg);
         color: var(--wc-text);
         font-size: 0.9em;
       }
@@ -161,11 +161,10 @@ export class VivinoAiSettingsDialog extends LitElement {
 
     return html`
       <div class="dialog-overlay" @click=${this._close}>
-        <div class="dialog" style="max-width:420px;padding:20px 24px" @click=${(e: Event) => e.stopPropagation()}>
-          <div class="dialog-top-bar" style="justify-content:space-between;padding:0 0 8px">
-            <span style="font-weight:600;color:var(--wc-text)">${this._t("ui.vivinoAiSettings.title")}</span>
-            <button class="icon-btn close-btn" title="${this._t('ui.common.close')}" @click=${this._close}>✕</button>
-          </div>
+        <div class="dialog" style="max-width:420px" @click=${(e: Event) => e.stopPropagation()}>
+          ${dialogClose(this._close, this._t('ui.common.close'))}
+          <div class="dialog-header" style="border-bottom:none;padding-bottom:4px">${this._t("ui.vivinoAiSettings.title")}</div>
+          <div style="padding:0 24px 20px">
 
           <div class="settings-row">
             <label class="fallback-label">
@@ -274,6 +273,7 @@ export class VivinoAiSettingsDialog extends LitElement {
             <p class="info-note">
               ${this._t("ui.vivinoAiSettings.infoNote")}
             </p>
+          </div>
           </div>
         </div>
       </div>

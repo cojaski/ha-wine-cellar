@@ -306,6 +306,25 @@ export const WINE_TYPE_COLORS: Record<WineType, string> = {
   whisky: "#B5651D",
 };
 
+// Text colour that reads on a filled WINE_TYPE_COLORS swatch: white on the
+// dark ones, a deep shade of the same hue on the pale ones.
+export const WINE_TYPE_INK: Record<WineType, string> = {
+  red: "#fff",
+  white: "#4a3a1c",
+  rosé: "#5c1f3b",
+  sparkling: "#3a4614",
+  dessert: "#3d2a00",
+  whisky: "#fff",
+};
+
+// Inline custom properties for a .type-chip (see typeChipStyles in
+// styles.ts). "all" and unknown ids get none and keep the wine-red default.
+export function typeChipStyle(id: string): string {
+  const color = WINE_TYPE_COLORS[id as WineType];
+  if (!color) return "";
+  return `--chip-color:${color};--chip-tint:${color}33;--chip-glow:${color}66;--chip-ink:${WINE_TYPE_INK[id as WineType]}`;
+}
+
 export const WINE_TYPE_LABELS: Record<WineType, string> = {
   red: "Red",
   white: "White",

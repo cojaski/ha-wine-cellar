@@ -1,8 +1,8 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { Wine, Cabinet, WineType, WINE_TYPE_COLORS, WINE_TYPE_LABELS, getWineTypeLabels, WineHistoryItem, getWineLocation, getRemovalReasons } from "../models";
+import { Wine, Cabinet, WineType, WINE_TYPE_COLORS, WINE_TYPE_LABELS, getWineTypeLabels, typeChipStyle, WineHistoryItem, getWineLocation, getRemovalReasons } from "../models";
 import { t } from "../i18n";
-import { sharedStyles, touchStyles } from "../styles";
+import { sharedStyles, touchStyles, typeChipStyles, dialogClose } from "../styles";
 import "./star-rating";
 import {
   matchesQuery,
@@ -170,12 +170,14 @@ export class InventoryDialog extends LitElement {
 
   static styles = [
     sharedStyles,
+    typeChipStyles,
     css`
       .inv-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 16px 20px 8px;
+        min-height: 36px;
+        padding: 12px 60px 8px 20px;
       }
 
       .inv-header-title {
@@ -184,19 +186,7 @@ export class InventoryDialog extends LitElement {
         color: var(--wc-text);
       }
 
-      .inv-close {
-        background: none;
-        border: none;
-        font-size: 1.3em;
-        cursor: pointer;
-        padding: 4px 8px;
-        border-radius: 8px;
-        color: var(--wc-text-secondary);
-      }
 
-      .inv-close:hover {
-        background: var(--wc-hover);
-      }
 
       .inv-header-actions {
         display: flex;
@@ -359,7 +349,7 @@ export class InventoryDialog extends LitElement {
         border: 1px solid var(--wc-border);
         border-radius: 20px;
         font-size: 0.88em;
-        background: var(--wc-bg);
+        background: var(--wc-field-bg);
         color: var(--wc-text);
         box-sizing: border-box;
       }
@@ -399,7 +389,7 @@ export class InventoryDialog extends LitElement {
         padding: 0 26px 0 12px;
         border: 1px solid var(--wc-border);
         border-radius: 14px;
-        background: var(--wc-bg)
+        background: var(--wc-field-bg)
           url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
           no-repeat right 10px center;
         color: var(--wc-text);
@@ -463,7 +453,7 @@ export class InventoryDialog extends LitElement {
         margin: 0 16px 10px;
         border: 1px solid var(--wc-border);
         border-radius: 10px;
-        background: var(--wc-bg);
+        background: var(--wc-field-bg);
       }
 
       .inv-filter-field {
@@ -479,7 +469,7 @@ export class InventoryDialog extends LitElement {
         padding: 6px 8px;
         border: 1px solid var(--wc-border);
         border-radius: 8px;
-        background: var(--wc-card-bg, var(--wc-bg));
+        background: var(--wc-field-bg);
         color: var(--wc-text);
         font-size: 1.05em;
         width: 100%;
@@ -579,7 +569,7 @@ export class InventoryDialog extends LitElement {
         margin: 0 16px 8px;
         padding: 6px 10px;
         border-radius: 8px;
-        background: var(--wc-bg);
+        background: var(--wc-field-bg);
         border: 1px solid var(--wc-border);
         font-size: 0.75em;
         color: var(--wc-text-secondary);
@@ -604,7 +594,7 @@ export class InventoryDialog extends LitElement {
         padding: 5px 8px;
         border: 1px solid var(--wc-border);
         border-radius: 8px;
-        background: var(--wc-bg);
+        background: var(--wc-field-bg);
         color: var(--wc-text);
         font-size: 1em;
         cursor: pointer;
@@ -651,7 +641,7 @@ export class InventoryDialog extends LitElement {
 
       .inv-chips {
         display: flex;
-        gap: 4px;
+        gap: 6px;
         padding: 0 16px 10px;
         flex-wrap: wrap;
       }
@@ -665,7 +655,8 @@ export class InventoryDialog extends LitElement {
         padding: 4px 10px;
         border-radius: 14px;
         border: 1px solid var(--wc-border);
-        background: transparent;
+        background: var(--wc-field-bg);
+        box-shadow: var(--wc-sheen);
         color: var(--wc-text-secondary);
         cursor: pointer;
         font-size: 0.75em;
@@ -674,13 +665,15 @@ export class InventoryDialog extends LitElement {
       }
 
       .inv-chip:hover {
-        background: rgba(114, 47, 55, 0.08);
+        background: var(--wc-hover);
+        color: var(--wc-text);
       }
 
       .inv-chip.active {
-        background: var(--wc-primary);
+        background: var(--wc-primary-grad);
         color: #fff;
-        border-color: var(--wc-primary);
+        border-color: transparent;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 3px 10px rgba(114, 47, 55, 0.3);
       }
 
       .inv-list {
@@ -2599,6 +2592,7 @@ export class InventoryDialog extends LitElement {
     return html`
       <div class="dialog-overlay" @click=${this._close}>
         <div class="dialog" style="max-width:800px;position:relative" @click=${(e: Event) => e.stopPropagation()}>
+          ${dialogClose(this._close, this._t('ui.common.close'))}
           <!-- Header -->
           <div class="inv-header">
             <span class="inv-header-title">${this._t("ui.inventory.title")}</span>
@@ -2614,7 +2608,6 @@ export class InventoryDialog extends LitElement {
                     ? this._t("ui.card.vivinoScanning")
                     : this._t("ui.inventory.reviewBtn")}
               </button>
-              <button class="inv-close" @click=${this._close}>✕</button>
             </div>
           </div>
 
@@ -2735,7 +2728,8 @@ export class InventoryDialog extends LitElement {
             ${filters.map(
               (f) => html`
                 <button
-                  class="inv-chip ${this._typeFilter === f.id ? "active" : ""}"
+                  class="type-chip ${f.id === "all" ? "all" : ""} ${this._typeFilter === f.id ? "active" : ""}"
+                  style=${typeChipStyle(f.id)}
                   @click=${() => {
                     this._typeFilter = f.id;
                     this._savePrefs();
