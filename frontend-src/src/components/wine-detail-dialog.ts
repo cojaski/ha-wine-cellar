@@ -39,6 +39,7 @@ export class WineDetailDialog extends LitElement {
   @state() private _scanningLabel = false;
   @state() private _showLabelCamera = false;
   @state() private _showRemoveConfirm = false;
+  @state() private _deleteArmed = false;
   @state() private _showDrinkDialog = false;
   @state() private _drinkRating = 0;
   @state() private _drinkNotes = "";
@@ -503,7 +504,6 @@ export class WineDetailDialog extends LitElement {
         display: flex;
         gap: 6px;
         padding: 0 16px 16px;
-        border-bottom: 1px solid var(--wc-border);
         justify-content: center;
         flex-wrap: wrap;
       }
@@ -872,6 +872,7 @@ export class WineDetailDialog extends LitElement {
       this._close();
     } else {
       // Show reason prompt for cellar wines
+      this._deleteArmed = false;
       this._showRemoveConfirm = true;
     }
   }
@@ -909,6 +910,24 @@ export class WineDetailDialog extends LitElement {
     this.dispatchEvent(
       new CustomEvent("remove-wine", {
         detail: { wine_id: this.wine.id, reason },
+        bubbles: true,
+        composed: true,
+      })
+    );
+    this._showRemoveConfirm = false;
+    this._close();
+  }
+
+  /** Delete outright, skipping history — for mistakes and test entries. Needs a second tap. */
+  private _confirmDelete() {
+    if (!this.wine) return;
+    if (!this._deleteArmed) {
+      this._deleteArmed = true;
+      return;
+    }
+    this.dispatchEvent(
+      new CustomEvent("remove-wine", {
+        detail: { wine_id: this.wine.id, reason: "other", archive: false, name: this.wine.name },
         bubbles: true,
         composed: true,
       })
@@ -1854,6 +1873,13 @@ export class WineDetailDialog extends LitElement {
                       @click=${() => this._confirmRemove(r.id)}
                     >${r.label}</button>
                   `)}
+                </div>
+                <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--wc-border)">
+                  <button
+                    style="padding:8px 16px;border-radius:20px;border:1px solid #c62828;background:${this._deleteArmed ? "#c62828" : "transparent"};color:${this._deleteArmed ? "#fff" : "#c62828"};cursor:pointer;font-size:0.85em"
+                    @click=${this._confirmDelete}
+                  >🗑 ${this._deleteArmed ? this._t("ui.wineDetail.deleteConfirmBtn") : this._t("ui.wineDetail.deleteBtn")}</button>
+                  <p style="margin:6px 0 0;font-size:0.75em;color:var(--wc-text-secondary)">${this._t("ui.wineDetail.deleteHint")}</p>
                 </div>
                 <button
                   style="margin-top:12px;padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.8em"

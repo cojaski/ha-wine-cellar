@@ -194,6 +194,12 @@ export class WineCellarCard extends LitElement {
         isolation: isolate;
       }
 
+      /* Room for the floating copy/move banner, so it never sits on top of
+         the last row of cells. */
+      ha-card.mode-armed {
+        padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+      }
+
       /* The card paints its own background, one screen tall, sticking to
          the viewport while the card scrolls past. A glass theme otherwise
          shows the dashboard wallpaper through a transparent card, and how
@@ -418,25 +424,70 @@ export class WineCellarCard extends LitElement {
         color: var(--wc-text-secondary);
       }
 
-      .copy-banner {
-        background: rgba(46, 125, 50, 0.1);
-        border: 1px solid rgba(46, 125, 50, 0.3);
-        color: #2e7d32;
-        font-size: 0.85em;
-        padding: 6px 16px;
+      /* Copy/move/place modes float at the bottom of the screen: they stay
+         armed while you scroll the cellar, so the way out has to stay in view
+         too (an inline banner at the top was easy to scroll past on mobile).
+         Below the dialogs (999), above the grid. */
+      .copy-banner,
+      .buy-list-banner {
+        position: fixed;
+        left: 50%;
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        transform: translateX(-50%);
+        z-index: 900;
+        box-sizing: border-box;
+        width: max-content;
+        max-width: calc(100vw - 32px);
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 8px 8px 16px;
+        border-radius: 999px;
+        font-size: 0.9em;
+        color: #fff;
+        background: rgba(46, 125, 50, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        -webkit-backdrop-filter: var(--wc-blur);
+        backdrop-filter: var(--wc-blur);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        animation: fadeIn 0.2s ease;
       }
 
-      .copy-banner button {
-        background: transparent;
-        border: 1px solid rgba(46, 125, 50, 0.4);
+      .copy-banner span,
+      .buy-list-banner span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
+
+      .copy-banner button,
+      .buy-list-banner button {
+        flex-shrink: 0;
+        background: #fff;
+        border: none;
         color: #2e7d32;
-        border-radius: 6px;
-        padding: 2px 10px;
+        border-radius: 999px;
+        padding: 6px 14px;
         cursor: pointer;
         font-size: 0.9em;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .buy-list-banner {
+        background: rgba(230, 81, 0, 0.92);
+      }
+
+      .buy-list-banner button {
+        color: #e65100;
+      }
+
+      /* Keep toasts clear of a floating mode banner. */
+      .toast.above-banner {
+        bottom: calc(80px + env(safe-area-inset-bottom, 0px));
       }
 
       .toast {
@@ -528,27 +579,6 @@ export class WineCellarCard extends LitElement {
       }
 
       .bl-remove-btn:hover { background: #b71c1c; }
-
-      .buy-list-banner {
-        background: rgba(230, 81, 0, 0.1);
-        border: 1px solid rgba(230, 81, 0, 0.3);
-        color: #e65100;
-        font-size: 0.85em;
-        padding: 6px 16px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-
-      .buy-list-banner button {
-        background: transparent;
-        border: 1px solid rgba(230, 81, 0, 0.4);
-        color: #e65100;
-        border-radius: 6px;
-        padding: 2px 10px;
-        cursor: pointer;
-        font-size: 0.9em;
-      }
 
       /* The arrangement count is the only stat you can act on, and it is only
          there at all when the cellar has something to say. */
@@ -2634,13 +2664,15 @@ export class WineCellarCard extends LitElement {
 
   private async _onRemoveWine(e: CustomEvent) {
     try {
-      const { wine_id, reason, name, personal_rating, drink_notes, buy_again } = e.detail;
+      const { wine_id, reason, name, personal_rating, drink_notes, buy_again, archive } = e.detail;
       const msg: Record<string, unknown> = { type: "wine_cellar/remove_wine", wine_id, reason: reason || "other" };
       // Only the Drink button sends a tasting log.
       if (buy_again !== undefined) Object.assign(msg, { personal_rating, drink_notes, buy_again });
+      if (archive === false) msg.archive = false;
       await this.hass.callWS(msg);
       await this._loadData();
       if (reason === "drank" && name) this._showToast(this._t("toast.wineDrunk", { name }));
+      if (archive === false && name) this._showToast(this._t("toast.wineDeleted", { name }));
     } catch (err) {
       console.error("Failed to remove wine", err);
       this._showToast(this._t("toast.removeWineFailed"));
@@ -2683,7 +2715,7 @@ export class WineCellarCard extends LitElement {
     const showUnassigned = this._activeTab === "unassigned" && !isSearching;
 
     return html`
-      <ha-card>
+      <ha-card class=${this._copiedWine || this._movingWine || this._movingBuyListItem ? "mode-armed" : ""}>
         <div
           class="card-bg ${this._cardBackground ? "custom" : ""}"
           style=${this._cardBackground ? `--wc-card-bg-image:url("${this._cardBackground}")` : ""}
@@ -4035,7 +4067,9 @@ export class WineCellarCard extends LitElement {
           : nothing}
 
         <!-- Toast -->
-        ${this._toast ? html`<div class="toast">${this._toast}</div>` : nothing}
+        ${this._toast
+          ? html`<div class="toast ${this._copiedWine || this._movingWine || this._movingBuyListItem ? "above-banner" : ""}">${this._toast}</div>`
+          : nothing}
     `;
   }
 

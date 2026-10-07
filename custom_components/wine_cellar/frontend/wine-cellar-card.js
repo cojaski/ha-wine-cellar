@@ -156,7 +156,6 @@ const sharedStyles = i$4 `
     gap: 4px;
     padding: 8px 16px;
     overflow-x: auto;
-    border-bottom: 1px solid var(--wc-border);
   }
 
   .tab {
@@ -1386,7 +1385,11 @@ var ui$1 = {
 		buyAgainLabel: "Buy again?",
 		buyAgainHint: "Adds it to your Buy List",
 		historySaved: "Saved",
-		historySaveFailed: "Failed to save"
+		historySaveFailed: "Failed to save",
+		deleteBtn: "Delete",
+		deleteConfirmBtn: "Tap to confirm",
+		historyEntryDeleted: "Entry deleted",
+		deleteHistoryEntryFailed: "Failed to delete entry"
 	},
 	addWine: {
 		title: "Add Wine",
@@ -1451,7 +1454,9 @@ var ui$1 = {
 		fullTitle: "Full — free a slot or raise its capacity",
 		rowLabel: "Row (1-based)",
 		columnLabel: "Column (1-based)",
-		pickZoneOrRowCol: "Pick a zone, or enter both Row and Column, so the bottle has a findable spot.",
+		nextOpenSlotHint: "Leave blank to use the next open slot (row {row}, column {col}).",
+		gridFull: "Every grid slot in this rack is full — pick a zone or another rack.",
+		pickZoneOrRowCol: "Enter both Row and Column, or leave both blank to use the next open slot.",
 		slotOutside: "That slot is outside {cabinet} ({rows} rows × {cols} columns).",
 		rowIsBinOrBox: "That row is a bin or box, not grid slots — pick it from the zone list above.",
 		slotFull: "Row {row}, column {col} is full ({used}/{depth} deep).",
@@ -1592,7 +1597,10 @@ var ui$1 = {
 		drinkNotesPlaceholder: "How was it? What did you pair it with?",
 		buyAgainLabel: "Buy again?",
 		buyAgainHint: "Adds it to your Buy List",
-		drinkConfirmBtn: "Drink it"
+		drinkConfirmBtn: "Drink it",
+		deleteBtn: "Delete permanently",
+		deleteConfirmBtn: "Tap again to delete",
+		deleteHint: "For mistakes or test entries — not kept in History."
 	},
 	rack: {
 		failedToAddRack: "Failed to add rack.",
@@ -1813,7 +1821,8 @@ var toast$1 = {
 	tapToMove: "Tap a cell to move \"{name}\"",
 	wineDrunk: "Cheers! {name} is now in History",
 	removeWineFailed: "Failed to remove wine",
-	changeCardBackgroundFailed: "Failed to change the card background"
+	changeCardBackgroundFailed: "Failed to change the card background",
+	wineDeleted: "{name} deleted"
 };
 var en = {
 	wineType: wineType$1,
@@ -2226,7 +2235,11 @@ var ui = {
 		buyAgainLabel: "À racheter ?",
 		buyAgainHint: "L'ajoute à votre liste d'achat",
 		historySaved: "Enregistré",
-		historySaveFailed: "Échec de l'enregistrement"
+		historySaveFailed: "Échec de l'enregistrement",
+		deleteBtn: "Supprimer",
+		deleteConfirmBtn: "Confirmer",
+		historyEntryDeleted: "Entrée supprimée",
+		deleteHistoryEntryFailed: "Échec de la suppression"
 	},
 	addWine: {
 		title: "Ajouter un vin",
@@ -2291,7 +2304,9 @@ var ui = {
 		fullTitle: "Plein — libérez un emplacement ou augmentez sa capacité",
 		rowLabel: "Ligne (à partir de 1)",
 		columnLabel: "Colonne (à partir de 1)",
-		pickZoneOrRowCol: "Choisissez une zone, ou renseignez à la fois la ligne et la colonne, pour que la bouteille ait un emplacement repérable.",
+		nextOpenSlotHint: "Laissez vide pour utiliser le prochain emplacement libre (ligne {row}, colonne {col}).",
+		gridFull: "Tous les emplacements de la grille de ce rack sont pleins — choisissez une zone ou un autre rack.",
+		pickZoneOrRowCol: "Renseignez à la fois la ligne et la colonne, ou laissez les deux vides pour utiliser le prochain emplacement libre.",
 		slotOutside: "Cet emplacement est hors de {cabinet} ({rows} lignes × {cols} colonnes).",
 		rowIsBinOrBox: "Cette ligne est un casier ou une caisse, pas des emplacements de grille — choisissez-la dans la liste de zones ci-dessus.",
 		slotFull: "Ligne {row}, colonne {col} est pleine ({used}/{depth} de profondeur).",
@@ -2432,7 +2447,10 @@ var ui = {
 		drinkNotesPlaceholder: "Comment était-il ? Avec quoi l'avez-vous accompagné ?",
 		buyAgainLabel: "À racheter ?",
 		buyAgainHint: "L'ajoute à votre liste d'achat",
-		drinkConfirmBtn: "Boire"
+		drinkConfirmBtn: "Boire",
+		deleteBtn: "Supprimer définitivement",
+		deleteConfirmBtn: "Appuyer à nouveau pour supprimer",
+		deleteHint: "Pour les erreurs ou les tests — non conservé dans l'Historique."
 	},
 	rack: {
 		failedToAddRack: "Échec de l'ajout du rack.",
@@ -2653,7 +2671,8 @@ var toast = {
 	tapToMove: "Touchez une case pour déplacer « {name} »",
 	wineDrunk: "Santé ! {name} est maintenant dans l'Historique",
 	removeWineFailed: "Échec du retrait du vin",
-	changeCardBackgroundFailed: "Échec du changement d'arrière-plan"
+	changeCardBackgroundFailed: "Échec du changement d'arrière-plan",
+	wineDeleted: "{name} supprimé"
 };
 var fr = {
 	wineType: wineType,
@@ -3205,6 +3224,23 @@ function placementIn(c, cabinet, wines) {
         col: c.col,
         depth: usage.nextDepth,
     };
+}
+// The grid slot a bottle should take when the user picked a rack but no
+// position: the first empty slot in reading order, so it doesn't end up
+// stacked behind some other wine, or failing that the first slot with depth
+// left. Null when the grid is full.
+function nextOpenSlot(cabinet, wines) {
+    if (!cabinet)
+        return null;
+    let partial = null;
+    for (const s of getRackSlots(cabinet)) {
+        const usage = containerUsage({ cabinetId: cabinet.id, kind: "slot", zone: "", row: s.row, col: s.col }, cabinet, wines);
+        if (usage.used === 0)
+            return s;
+        if (!usage.full && !partial)
+            partial = s;
+    }
+    return partial;
 }
 // Where each of `count` identical bottles would land, given a chosen
 // destination. Returns fewer entries than asked when the destination runs out
@@ -5016,15 +5052,32 @@ CabinetGrid.styles = [
         display: block;
       }
 
+      /* The gold is painted as a frame (::before, masked to the padding
+         ring) plus the title strip, never behind the grid — otherwise the
+         semi-transparent .grid-inner just shows gold instead of the page. */
       .cabinet {
-        background: linear-gradient(135deg, #8b6914 0%, #c4973b 50%, #8b6914 100%);
+        --wc-rack-gold: linear-gradient(135deg, #8b6914 0%, #c4973b 50%, #8b6914 100%);
+        position: relative;
         border-radius: 12px;
         padding: 8px;
-        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3),
-          0 4px 12px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      .cabinet::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        padding: inherit;
+        border-radius: inherit;
+        background: var(--wc-rack-gold);
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+        pointer-events: none;
       }
 
       .cabinet-name {
+        background: var(--wc-rack-gold);
         text-align: center;
         color: #f5e6ca;
         font-size: 0.8em;
@@ -5035,15 +5088,15 @@ CabinetGrid.styles = [
 
       .cabinet-name.clickable {
         cursor: pointer;
-        border-radius: 6px;
       }
 
       .cabinet-name.clickable:hover {
-        background: rgba(255, 255, 255, 0.08);
+        background: linear-gradient(rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.08)),
+          var(--wc-rack-gold);
       }
 
       .grid-inner {
-        background: linear-gradient(180deg, #1a1a3a 0%, #0d0d2b 100%);
+        background: linear-gradient(180deg, rgba(26, 26, 58, 0.35) 0%, rgba(13, 13, 43, 0.35) 100%);
         border-radius: 8px;
         padding: 6px;
         position: relative;
@@ -5060,7 +5113,7 @@ CabinetGrid.styles = [
         bottom: 0;
         background: radial-gradient(
           ellipse at center,
-          rgba(50, 100, 255, 0.15) 0%,
+          rgba(50, 100, 255, 0.05) 0%,
           transparent 70%
         );
         pointer-events: none;
@@ -5448,7 +5501,7 @@ CabinetGrid.styles = [
          golden ledge (matching .row::after) instead of the whole zone
          being solid gold. */
       .zone-shelf {
-        background: linear-gradient(180deg, #1a1a3a 0%, #0d0d2b 100%);
+        background: linear-gradient(180deg, rgba(26, 26, 58, 0.35) 0%, rgba(13, 13, 43, 0.35) 100%);
       }
 
       .zone-shelf-levels {
@@ -6332,6 +6385,7 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
         this._scanningLabel = false;
         this._showLabelCamera = false;
         this._showRemoveConfirm = false;
+        this._deleteArmed = false;
         this._showDrinkDialog = false;
         this._drinkRating = 0;
         this._drinkNotes = "";
@@ -6521,6 +6575,7 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
         }
         else {
             // Show reason prompt for cellar wines
+            this._deleteArmed = false;
             this._showRemoveConfirm = true;
         }
     }
@@ -6555,6 +6610,22 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
             return;
         this.dispatchEvent(new CustomEvent("remove-wine", {
             detail: { wine_id: this.wine.id, reason },
+            bubbles: true,
+            composed: true,
+        }));
+        this._showRemoveConfirm = false;
+        this._close();
+    }
+    /** Delete outright, skipping history — for mistakes and test entries. Needs a second tap. */
+    _confirmDelete() {
+        if (!this.wine)
+            return;
+        if (!this._deleteArmed) {
+            this._deleteArmed = true;
+            return;
+        }
+        this.dispatchEvent(new CustomEvent("remove-wine", {
+            detail: { wine_id: this.wine.id, reason: "other", archive: false, name: this.wine.name },
             bubbles: true,
             composed: true,
         }));
@@ -7502,6 +7573,13 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
                     >${r.label}</button>
                   `)}
                 </div>
+                <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--wc-border)">
+                  <button
+                    style="padding:8px 16px;border-radius:20px;border:1px solid #c62828;background:${this._deleteArmed ? "#c62828" : "transparent"};color:${this._deleteArmed ? "#fff" : "#c62828"};cursor:pointer;font-size:0.85em"
+                    @click=${this._confirmDelete}
+                  >🗑 ${this._deleteArmed ? this._t("ui.wineDetail.deleteConfirmBtn") : this._t("ui.wineDetail.deleteBtn")}</button>
+                  <p style="margin:6px 0 0;font-size:0.75em;color:var(--wc-text-secondary)">${this._t("ui.wineDetail.deleteHint")}</p>
+                </div>
                 <button
                   style="margin-top:12px;padding:6px 16px;border-radius:16px;border:none;background:var(--wc-hover);color:var(--wc-text-secondary);cursor:pointer;font-size:0.8em"
                   @click=${() => (this._showRemoveConfirm = false)}
@@ -8102,7 +8180,6 @@ WineDetailDialog.styles = [
         display: flex;
         gap: 6px;
         padding: 0 16px 16px;
-        border-bottom: 1px solid var(--wc-border);
         justify-content: center;
         flex-wrap: wrap;
       }
@@ -8358,6 +8435,9 @@ __decorate([
 __decorate([
     r$1()
 ], WineDetailDialog.prototype, "_showRemoveConfirm", void 0);
+__decorate([
+    r$1()
+], WineDetailDialog.prototype, "_deleteArmed", void 0);
 __decorate([
     r$1()
 ], WineDetailDialog.prototype, "_showDrinkDialog", void 0);
@@ -11877,6 +11957,7 @@ let AddWineDialog = class AddWineDialog extends i$1 {
         const selectedCabinet = this.cabinets.find((c) => c.id === this._wineData.cabinet_id);
         const zones = selectedCabinet?.storage_rows || [];
         const hasZone = !!this._wineData.zone;
+        const nextSlot = selectedCabinet && !hasZone ? nextOpenSlot(selectedCabinet, this.wines) : null;
         return b$1 `
       <div class="dialog-body">
         <div style="font-weight: 500; margin-bottom: 8px">${this._t("ui.addWine.chooseLocation")}</div>
@@ -11936,8 +12017,9 @@ let AddWineDialog = class AddWineDialog extends i$1 {
                   <input
                     type="number"
                     min="1"
-                    .value=${this._wineData.row != null ? (this._wineData.row + 1).toString() : ""}
-                    @input=${(e) => this._updateField("row", parseInt(e.target.value) - 1)}
+                    placeholder=${nextSlot ? (nextSlot.row + 1).toString() : ""}
+                    .value=${this._wineData.row != null && !isNaN(this._wineData.row) ? (this._wineData.row + 1).toString() : ""}
+                    @input=${(e) => this._updateField("row", this._parsePos(e.target.value))}
                   />
                 </div>
                 <div class="form-group">
@@ -11945,10 +12027,16 @@ let AddWineDialog = class AddWineDialog extends i$1 {
                   <input
                     type="number"
                     min="1"
-                    .value=${this._wineData.col != null ? (this._wineData.col + 1).toString() : ""}
-                    @input=${(e) => this._updateField("col", parseInt(e.target.value) - 1)}
+                    placeholder=${nextSlot ? (nextSlot.col + 1).toString() : ""}
+                    .value=${this._wineData.col != null && !isNaN(this._wineData.col) ? (this._wineData.col + 1).toString() : ""}
+                    @input=${(e) => this._updateField("col", this._parsePos(e.target.value))}
                   />
                 </div>
+              </div>
+              <div style="font-size:0.8em;color:var(--wc-text-secondary);margin-top:4px">
+                ${nextSlot
+                ? this._t("ui.addWine.nextOpenSlotHint", { row: nextSlot.row + 1, col: nextSlot.col + 1 })
+                : this._t("ui.addWine.gridFull")}
               </div>
             `
             : A$1}
@@ -11965,16 +12053,33 @@ let AddWineDialog = class AddWineDialog extends i$1 {
       </div>
     `;
     }
+    // A cleared input is null, not NaN, so "blank" means one thing.
+    _parsePos(value) {
+        const n = parseInt(value);
+        return isNaN(n) ? null : n - 1;
+    }
     _onLocationNext() {
-        const d = this._wineData;
+        let d = this._wineData;
+        const cabinet = this.cabinets.find((c) => c.id === d.cabinet_id);
+        const blank = (v) => v == null || isNaN(v);
+        // Rack picked but no position given: take the next open grid slot,
+        // since the user has no way to see from here which ones are free.
+        if (cabinet && !d.zone && blank(d.row) && blank(d.col)) {
+            const slot = nextOpenSlot(cabinet, this.wines);
+            if (!slot) {
+                this._error = this._t("ui.addWine.gridFull");
+                return;
+            }
+            d = { ...d, row: slot.row, col: slot.col };
+            this._wineData = d;
+        }
         // A cabinet with no zone and no complete row/col is a wine with no
         // findable position — it silently vanishes (assigned to the cabinet,
         // but rendered nowhere). Catch that here instead of at save time.
-        if (d.cabinet_id && !d.zone && (d.row == null || d.col == null || isNaN(d.row) || isNaN(d.col))) {
+        if (d.cabinet_id && !d.zone && (blank(d.row) || blank(d.col))) {
             this._error = this._t("ui.addWine.pickZoneOrRowCol");
             return;
         }
-        const cabinet = this.cabinets.find((c) => c.id === d.cabinet_id);
         if (cabinet && !d.zone && d.row != null && d.col != null) {
             if (d.row < 0 || d.row >= cabinet.rows || d.col < 0 || d.col >= cabinet.cols) {
                 this._error = this._t("ui.addWine.slotOutside", { cabinet: cabinet.name, rows: cabinet.rows, cols: cabinet.cols });
@@ -15751,6 +15856,7 @@ let InventoryDialog = class InventoryDialog extends i$1 {
         this._showReview = false;
         this._viewMode = "inventory";
         this._historyItems = [];
+        this._deleteArmedHistoryId = "";
         this._historyLoading = false;
         this._buyAgainOnly = false;
         this._editingHistoryId = "";
@@ -16254,6 +16360,24 @@ let InventoryDialog = class InventoryDialog extends i$1 {
             this._statusMsg = this._t("ui.inventory.restoreWineFailed");
         }
     }
+    /** Permanently delete one history entry. The first tap arms it, the second deletes. */
+    async _deleteFromHistory(historyId) {
+        if (this._deleteArmedHistoryId !== historyId) {
+            this._deleteArmedHistoryId = historyId;
+            return;
+        }
+        this._deleteArmedHistoryId = "";
+        try {
+            await this.hass.callWS({ type: "wine_cellar/delete_history_entry", history_id: historyId });
+            this._historyItems = this._historyItems.filter((i) => i.id !== historyId);
+            this._loadStorageInfo();
+            this._statusMsg = this._t("ui.inventory.historyEntryDeleted");
+        }
+        catch (err) {
+            console.error("Failed to delete history entry", err);
+            this._statusMsg = this._t("ui.inventory.deleteHistoryEntryFailed");
+        }
+    }
     _startEditHistory(item) {
         if (this._editingHistoryId === item.id) {
             this._editingHistoryId = "";
@@ -16387,6 +16511,12 @@ let InventoryDialog = class InventoryDialog extends i$1 {
             : this._t("ui.inventory.addNotesBtn")}
                 </button>
                 <button class="inv-btn" @click=${() => this._restoreFromHistory(item.id)}>${this._t("ui.inventory.restoreBtn")}</button>
+                <button class="inv-btn"
+                  style="color:${this._deleteArmedHistoryId === item.id ? "#fff" : "#c62828"};${this._deleteArmedHistoryId === item.id ? "background:#c62828;border-color:#c62828" : ""}"
+                  @click=${() => this._deleteFromHistory(item.id)}
+                >🗑 ${this._deleteArmedHistoryId === item.id
+            ? this._t("ui.inventory.deleteConfirmBtn")
+            : this._t("ui.inventory.deleteBtn")}</button>
               </div>
             </div>
             ${this._editingHistoryId === item.id ? this._renderHistoryEditor(item) : A$1}
@@ -18678,6 +18808,9 @@ __decorate([
 __decorate([
     r$1()
 ], InventoryDialog.prototype, "_historyItems", void 0);
+__decorate([
+    r$1()
+], InventoryDialog.prototype, "_deleteArmedHistoryId", void 0);
 __decorate([
     r$1()
 ], InventoryDialog.prototype, "_historyLoading", void 0);
@@ -21054,15 +21187,19 @@ let WineCellarCard = class WineCellarCard extends i$1 {
     }
     async _onRemoveWine(e) {
         try {
-            const { wine_id, reason, name, personal_rating, drink_notes, buy_again } = e.detail;
+            const { wine_id, reason, name, personal_rating, drink_notes, buy_again, archive } = e.detail;
             const msg = { type: "wine_cellar/remove_wine", wine_id, reason: reason || "other" };
             // Only the Drink button sends a tasting log.
             if (buy_again !== undefined)
                 Object.assign(msg, { personal_rating, drink_notes, buy_again });
+            if (archive === false)
+                msg.archive = false;
             await this.hass.callWS(msg);
             await this._loadData();
             if (reason === "drank" && name)
                 this._showToast(this._t("toast.wineDrunk", { name }));
+            if (archive === false && name)
+                this._showToast(this._t("toast.wineDeleted", { name }));
         }
         catch (err) {
             console.error("Failed to remove wine", err);
@@ -21099,7 +21236,7 @@ let WineCellarCard = class WineCellarCard extends i$1 {
         const showBuyList = this._activeTab === "buy-list" && !isSearching;
         const showUnassigned = this._activeTab === "unassigned" && !isSearching;
         return b$1 `
-      <ha-card>
+      <ha-card class=${this._copiedWine || this._movingWine || this._movingBuyListItem ? "mode-armed" : ""}>
         <div
           class="card-bg ${this._cardBackground ? "custom" : ""}"
           style=${this._cardBackground ? `--wc-card-bg-image:url("${this._cardBackground}")` : ""}
@@ -22439,7 +22576,9 @@ let WineCellarCard = class WineCellarCard extends i$1 {
             : A$1}
 
         <!-- Toast -->
-        ${this._toast ? b$1 `<div class="toast">${this._toast}</div>` : A$1}
+        ${this._toast
+            ? b$1 `<div class="toast ${this._copiedWine || this._movingWine || this._movingBuyListItem ? "above-banner" : ""}">${this._toast}</div>`
+            : A$1}
     `;
     }
     getCardSize() {
@@ -22478,6 +22617,12 @@ WineCellarCard.styles = [
       ha-card {
         overflow: clip;
         isolation: isolate;
+      }
+
+      /* Room for the floating copy/move banner, so it never sits on top of
+         the last row of cells. */
+      ha-card.mode-armed {
+        padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
       }
 
       /* The card paints its own background, one screen tall, sticking to
@@ -22704,25 +22849,70 @@ WineCellarCard.styles = [
         color: var(--wc-text-secondary);
       }
 
-      .copy-banner {
-        background: rgba(46, 125, 50, 0.1);
-        border: 1px solid rgba(46, 125, 50, 0.3);
-        color: #2e7d32;
-        font-size: 0.85em;
-        padding: 6px 16px;
+      /* Copy/move/place modes float at the bottom of the screen: they stay
+         armed while you scroll the cellar, so the way out has to stay in view
+         too (an inline banner at the top was easy to scroll past on mobile).
+         Below the dialogs (999), above the grid. */
+      .copy-banner,
+      .buy-list-banner {
+        position: fixed;
+        left: 50%;
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        transform: translateX(-50%);
+        z-index: 900;
+        box-sizing: border-box;
+        width: max-content;
+        max-width: calc(100vw - 32px);
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 8px 8px 16px;
+        border-radius: 999px;
+        font-size: 0.9em;
+        color: #fff;
+        background: rgba(46, 125, 50, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        -webkit-backdrop-filter: var(--wc-blur);
+        backdrop-filter: var(--wc-blur);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        animation: fadeIn 0.2s ease;
       }
 
-      .copy-banner button {
-        background: transparent;
-        border: 1px solid rgba(46, 125, 50, 0.4);
+      .copy-banner span,
+      .buy-list-banner span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
+
+      .copy-banner button,
+      .buy-list-banner button {
+        flex-shrink: 0;
+        background: #fff;
+        border: none;
         color: #2e7d32;
-        border-radius: 6px;
-        padding: 2px 10px;
+        border-radius: 999px;
+        padding: 6px 14px;
         cursor: pointer;
         font-size: 0.9em;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .buy-list-banner {
+        background: rgba(230, 81, 0, 0.92);
+      }
+
+      .buy-list-banner button {
+        color: #e65100;
+      }
+
+      /* Keep toasts clear of a floating mode banner. */
+      .toast.above-banner {
+        bottom: calc(80px + env(safe-area-inset-bottom, 0px));
       }
 
       .toast {
@@ -22814,27 +23004,6 @@ WineCellarCard.styles = [
       }
 
       .bl-remove-btn:hover { background: #b71c1c; }
-
-      .buy-list-banner {
-        background: rgba(230, 81, 0, 0.1);
-        border: 1px solid rgba(230, 81, 0, 0.3);
-        color: #e65100;
-        font-size: 0.85em;
-        padding: 6px 16px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-
-      .buy-list-banner button {
-        background: transparent;
-        border: 1px solid rgba(230, 81, 0, 0.4);
-        color: #e65100;
-        border-radius: 6px;
-        padding: 2px 10px;
-        cursor: pointer;
-        font-size: 0.9em;
-      }
 
       /* The arrangement count is the only stat you can act on, and it is only
          there at all when the cellar has something to say. */

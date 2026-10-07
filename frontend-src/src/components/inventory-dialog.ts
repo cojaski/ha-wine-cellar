@@ -131,6 +131,7 @@ export class InventoryDialog extends LitElement {
   @state() private _showReview = false;
   @state() private _viewMode: "inventory" | "history" = "inventory";
   @state() private _historyItems: WineHistoryItem[] = [];
+  @state() private _deleteArmedHistoryId = "";
   @state() private _historyLoading = false;
   @state() private _buyAgainOnly = false;
   @state() private _editingHistoryId = "";
@@ -1528,6 +1529,24 @@ export class InventoryDialog extends LitElement {
     }
   }
 
+  /** Permanently delete one history entry. The first tap arms it, the second deletes. */
+  private async _deleteFromHistory(historyId: string) {
+    if (this._deleteArmedHistoryId !== historyId) {
+      this._deleteArmedHistoryId = historyId;
+      return;
+    }
+    this._deleteArmedHistoryId = "";
+    try {
+      await this.hass.callWS({ type: "wine_cellar/delete_history_entry", history_id: historyId });
+      this._historyItems = this._historyItems.filter((i) => i.id !== historyId);
+      this._loadStorageInfo();
+      this._statusMsg = this._t("ui.inventory.historyEntryDeleted");
+    } catch (err) {
+      console.error("Failed to delete history entry", err);
+      this._statusMsg = this._t("ui.inventory.deleteHistoryEntryFailed");
+    }
+  }
+
   private _startEditHistory(item: WineHistoryItem) {
     if (this._editingHistoryId === item.id) {
       this._editingHistoryId = "";
@@ -1661,6 +1680,12 @@ export class InventoryDialog extends LitElement {
                     : this._t("ui.inventory.addNotesBtn")}
                 </button>
                 <button class="inv-btn" @click=${() => this._restoreFromHistory(item.id)}>${this._t("ui.inventory.restoreBtn")}</button>
+                <button class="inv-btn"
+                  style="color:${this._deleteArmedHistoryId === item.id ? "#fff" : "#c62828"};${this._deleteArmedHistoryId === item.id ? "background:#c62828;border-color:#c62828" : ""}"
+                  @click=${() => this._deleteFromHistory(item.id)}
+                >🗑 ${this._deleteArmedHistoryId === item.id
+                  ? this._t("ui.inventory.deleteConfirmBtn")
+                  : this._t("ui.inventory.deleteBtn")}</button>
               </div>
             </div>
             ${this._editingHistoryId === item.id ? this._renderHistoryEditor(item) : nothing}

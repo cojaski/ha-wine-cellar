@@ -40,15 +40,32 @@ export class CabinetGrid extends LitElement {
         display: block;
       }
 
+      /* The gold is painted as a frame (::before, masked to the padding
+         ring) plus the title strip, never behind the grid — otherwise the
+         semi-transparent .grid-inner just shows gold instead of the page. */
       .cabinet {
-        background: linear-gradient(135deg, #8b6914 0%, #c4973b 50%, #8b6914 100%);
+        --wc-rack-gold: linear-gradient(135deg, #8b6914 0%, #c4973b 50%, #8b6914 100%);
+        position: relative;
         border-radius: 12px;
         padding: 8px;
-        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3),
-          0 4px 12px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      .cabinet::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        padding: inherit;
+        border-radius: inherit;
+        background: var(--wc-rack-gold);
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+        pointer-events: none;
       }
 
       .cabinet-name {
+        background: var(--wc-rack-gold);
         text-align: center;
         color: #f5e6ca;
         font-size: 0.8em;
@@ -59,15 +76,15 @@ export class CabinetGrid extends LitElement {
 
       .cabinet-name.clickable {
         cursor: pointer;
-        border-radius: 6px;
       }
 
       .cabinet-name.clickable:hover {
-        background: rgba(255, 255, 255, 0.08);
+        background: linear-gradient(rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.08)),
+          var(--wc-rack-gold);
       }
 
       .grid-inner {
-        background: linear-gradient(180deg, #1a1a3a 0%, #0d0d2b 100%);
+        background: linear-gradient(180deg, rgba(26, 26, 58, 0.35) 0%, rgba(13, 13, 43, 0.35) 100%);
         border-radius: 8px;
         padding: 6px;
         position: relative;
@@ -84,7 +101,7 @@ export class CabinetGrid extends LitElement {
         bottom: 0;
         background: radial-gradient(
           ellipse at center,
-          rgba(50, 100, 255, 0.15) 0%,
+          rgba(50, 100, 255, 0.05) 0%,
           transparent 70%
         );
         pointer-events: none;
@@ -472,7 +489,7 @@ export class CabinetGrid extends LitElement {
          golden ledge (matching .row::after) instead of the whole zone
          being solid gold. */
       .zone-shelf {
-        background: linear-gradient(180deg, #1a1a3a 0%, #0d0d2b 100%);
+        background: linear-gradient(180deg, rgba(26, 26, 58, 0.35) 0%, rgba(13, 13, 43, 0.35) 100%);
       }
 
       .zone-shelf-levels {

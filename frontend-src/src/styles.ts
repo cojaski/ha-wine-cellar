@@ -86,7 +86,6 @@ export const sharedStyles = css`
     gap: 4px;
     padding: 8px 16px;
     overflow-x: auto;
-    border-bottom: 1px solid var(--wc-border);
   }
 
   .tab {
