@@ -732,6 +732,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_move_to_cellar)
     websocket_api.async_register_command(hass, ws_get_wine_history)
     websocket_api.async_register_command(hass, ws_clear_wine_history)
+    websocket_api.async_register_command(hass, ws_delete_history_entry)
     websocket_api.async_register_command(hass, ws_restore_wine)
     websocket_api.async_register_command(hass, ws_update_history_entry)
     websocket_api.async_register_command(hass, ws_get_backup)
@@ -830,6 +831,7 @@ async def ws_add_wine(
         ),
         vol.Optional("drink_notes"): str,
         vol.Optional("buy_again"): bool,
+        vol.Optional("archive", default=True): bool,
     }
 )
 @websocket_api.async_response
@@ -838,11 +840,14 @@ async def ws_remove_wine(
     connection: websocket_api.ActiveConnection,
     msg: dict[str, Any],
 ) -> None:
-    """Remove a wine by ID, archiving to history."""
+    """Remove a wine by ID, archiving to history unless ``archive`` is false."""
     storage = hass.data[DOMAIN]["storage"]
     drink_info = {k: msg[k] for k in _HISTORY_LOG_KEYS if k in msg}
     success = storage.remove_wine(
-        msg["wine_id"], reason=msg.get("reason", "other"), drink_info=drink_info
+        msg["wine_id"],
+        reason=msg.get("reason", "other"),
+        drink_info=drink_info,
+        archive=msg["archive"],
     )
     if success:
         await storage.async_save()
@@ -2286,6 +2291,27 @@ async def ws_clear_wine_history(
     """Clear all wine removal history."""
     storage = hass.data[DOMAIN]["storage"]
     storage._data["wine_history"] = []
+    await storage.async_save()
+    connection.send_result(msg["id"], {"success": True})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "wine_cellar/delete_history_entry",
+        vol.Required("history_id"): str,
+    }
+)
+@websocket_api.async_response
+async def ws_delete_history_entry(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Delete a single history entry permanently."""
+    storage = hass.data[DOMAIN]["storage"]
+    if not storage.delete_history_entry(msg["history_id"]):
+        connection.send_error(msg["id"], "not_found", "History entry not found")
+        return
     await storage.async_save()
     connection.send_result(msg["id"], {"success": True})
 

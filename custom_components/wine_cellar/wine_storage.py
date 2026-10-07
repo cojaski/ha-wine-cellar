@@ -361,16 +361,21 @@ class WineCellarStorage:
         wine_id: str,
         reason: str = "other",
         drink_info: dict[str, Any] | None = None,
+        archive: bool = True,
     ) -> bool:
         """Remove a wine bottle by ID and archive it to history.
 
         ``drink_info`` carries the optional tasting log the Drink button
         collects (personal rating, notes, buy again); the same fields can be
-        filled in later through ``update_history_entry``.
+        filled in later through ``update_history_entry``. ``archive=False``
+        deletes the bottle outright (mistakes, test entries) with no history.
         """
         wines = self._data[CONF_WINES]
         for i, wine in enumerate(wines):
             if wine["id"] == wine_id:
+                if not archive:
+                    wines.pop(i)
+                    return True
                 # Archive to history before removing
                 history_entry = {
                     "id": str(uuid.uuid4()),
@@ -420,6 +425,15 @@ class WineCellarStorage:
                 history.pop(i)
                 return wine
         return None
+
+    def delete_history_entry(self, history_id: str) -> bool:
+        """Delete a history entry for good (it cannot be restored afterwards)."""
+        history = self._data[CONF_WINE_HISTORY]
+        for i, entry in enumerate(history):
+            if entry["id"] == history_id:
+                history.pop(i)
+                return True
+        return False
 
     _HISTORY_EDITABLE_KEYS = ("personal_rating", "drink_notes", "buy_again")
 

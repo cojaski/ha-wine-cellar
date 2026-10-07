@@ -399,7 +399,11 @@
       "buyAgainLabel": "À racheter ?",
       "buyAgainHint": "L'ajoute à votre liste d'achat",
       "historySaved": "Enregistré",
-      "historySaveFailed": "Échec de l'enregistrement"
+      "historySaveFailed": "Échec de l'enregistrement",
+      "deleteBtn": "Supprimer",
+      "deleteConfirmBtn": "Confirmer",
+      "historyEntryDeleted": "Entrée supprimée",
+      "deleteHistoryEntryFailed": "Échec de la suppression"
     },
     "addWine": {
       "title": "Ajouter un vin",
@@ -464,7 +468,9 @@
       "fullTitle": "Plein — libérez un emplacement ou augmentez sa capacité",
       "rowLabel": "Ligne (à partir de 1)",
       "columnLabel": "Colonne (à partir de 1)",
-      "pickZoneOrRowCol": "Choisissez une zone, ou renseignez à la fois la ligne et la colonne, pour que la bouteille ait un emplacement repérable.",
+      "nextOpenSlotHint": "Laissez vide pour utiliser le prochain emplacement libre (ligne {row}, colonne {col}).",
+      "gridFull": "Tous les emplacements de la grille de ce rack sont pleins — choisissez une zone ou un autre rack.",
+      "pickZoneOrRowCol": "Renseignez à la fois la ligne et la colonne, ou laissez les deux vides pour utiliser le prochain emplacement libre.",
       "slotOutside": "Cet emplacement est hors de {cabinet} ({rows} lignes × {cols} colonnes).",
       "rowIsBinOrBox": "Cette ligne est un casier ou une caisse, pas des emplacements de grille — choisissez-la dans la liste de zones ci-dessus.",
       "slotFull": "Ligne {row}, colonne {col} est pleine ({used}/{depth} de profondeur).",
@@ -605,7 +611,10 @@
       "drinkNotesPlaceholder": "Comment était-il ? Avec quoi l'avez-vous accompagné ?",
       "buyAgainLabel": "À racheter ?",
       "buyAgainHint": "L'ajoute à votre liste d'achat",
-      "drinkConfirmBtn": "Boire"
+      "drinkConfirmBtn": "Boire",
+      "deleteBtn": "Supprimer définitivement",
+      "deleteConfirmBtn": "Appuyer à nouveau pour supprimer",
+      "deleteHint": "Pour les erreurs ou les tests — non conservé dans l'Historique."
     },
     "rack": {
       "failedToAddRack": "Échec de l'ajout du rack.",
@@ -826,6 +835,7 @@
     "tapToMove": "Touchez une case pour déplacer « {name} »",
     "wineDrunk": "Santé ! {name} est maintenant dans l'Historique",
     "removeWineFailed": "Échec du retrait du vin",
-    "changeCardBackgroundFailed": "Échec du changement d'arrière-plan"
+    "changeCardBackgroundFailed": "Échec du changement d'arrière-plan",
+    "wineDeleted": "{name} supprimé"
   }
 }

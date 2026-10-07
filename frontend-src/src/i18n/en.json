@@ -399,7 +399,11 @@
       "buyAgainLabel": "Buy again?",
       "buyAgainHint": "Adds it to your Buy List",
       "historySaved": "Saved",
-      "historySaveFailed": "Failed to save"
+      "historySaveFailed": "Failed to save",
+      "deleteBtn": "Delete",
+      "deleteConfirmBtn": "Tap to confirm",
+      "historyEntryDeleted": "Entry deleted",
+      "deleteHistoryEntryFailed": "Failed to delete entry"
     },
     "addWine": {
       "title": "Add Wine",
@@ -464,7 +468,9 @@
       "fullTitle": "Full — free a slot or raise its capacity",
       "rowLabel": "Row (1-based)",
       "columnLabel": "Column (1-based)",
-      "pickZoneOrRowCol": "Pick a zone, or enter both Row and Column, so the bottle has a findable spot.",
+      "nextOpenSlotHint": "Leave blank to use the next open slot (row {row}, column {col}).",
+      "gridFull": "Every grid slot in this rack is full — pick a zone or another rack.",
+      "pickZoneOrRowCol": "Enter both Row and Column, or leave both blank to use the next open slot.",
       "slotOutside": "That slot is outside {cabinet} ({rows} rows × {cols} columns).",
       "rowIsBinOrBox": "That row is a bin or box, not grid slots — pick it from the zone list above.",
       "slotFull": "Row {row}, column {col} is full ({used}/{depth} deep).",
@@ -605,7 +611,10 @@
       "drinkNotesPlaceholder": "How was it? What did you pair it with?",
       "buyAgainLabel": "Buy again?",
       "buyAgainHint": "Adds it to your Buy List",
-      "drinkConfirmBtn": "Drink it"
+      "drinkConfirmBtn": "Drink it",
+      "deleteBtn": "Delete permanently",
+      "deleteConfirmBtn": "Tap again to delete",
+      "deleteHint": "For mistakes or test entries — not kept in History."
     },
     "rack": {
       "failedToAddRack": "Failed to add rack.",
@@ -826,6 +835,7 @@
     "tapToMove": "Tap a cell to move \"{name}\"",
     "wineDrunk": "Cheers! {name} is now in History",
     "removeWineFailed": "Failed to remove wine",
-    "changeCardBackgroundFailed": "Failed to change the card background"
+    "changeCardBackgroundFailed": "Failed to change the card background",
+    "wineDeleted": "{name} deleted"
   }
 }

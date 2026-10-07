@@ -20,6 +20,7 @@ import {
   containerOf,
   containerUsage,
   freeAt,
+  nextOpenSlot,
   placementIn,
   planSlots,
   sameContainer,
@@ -1464,6 +1465,7 @@ export class AddWineDialog extends LitElement {
     const selectedCabinet = this.cabinets.find((c) => c.id === this._wineData.cabinet_id);
     const zones = selectedCabinet?.storage_rows || [];
     const hasZone = !!this._wineData.zone;
+    const nextSlot = selectedCabinet && !hasZone ? nextOpenSlot(selectedCabinet, this.wines) : null;
 
     return html`
       <div class="dialog-body">
@@ -1526,9 +1528,10 @@ export class AddWineDialog extends LitElement {
                   <input
                     type="number"
                     min="1"
-                    .value=${this._wineData.row != null ? (this._wineData.row + 1).toString() : ""}
+                    placeholder=${nextSlot ? (nextSlot.row + 1).toString() : ""}
+                    .value=${this._wineData.row != null && !isNaN(this._wineData.row) ? (this._wineData.row + 1).toString() : ""}
                     @input=${(e: InputEvent) =>
-                      this._updateField("row", parseInt((e.target as HTMLInputElement).value) - 1)}
+                      this._updateField("row", this._parsePos((e.target as HTMLInputElement).value))}
                   />
                 </div>
                 <div class="form-group">
@@ -1536,11 +1539,17 @@ export class AddWineDialog extends LitElement {
                   <input
                     type="number"
                     min="1"
-                    .value=${this._wineData.col != null ? (this._wineData.col + 1).toString() : ""}
+                    placeholder=${nextSlot ? (nextSlot.col + 1).toString() : ""}
+                    .value=${this._wineData.col != null && !isNaN(this._wineData.col) ? (this._wineData.col + 1).toString() : ""}
                     @input=${(e: InputEvent) =>
-                      this._updateField("col", parseInt((e.target as HTMLInputElement).value) - 1)}
+                      this._updateField("col", this._parsePos((e.target as HTMLInputElement).value))}
                   />
                 </div>
+              </div>
+              <div style="font-size:0.8em;color:var(--wc-text-secondary);margin-top:4px">
+                ${nextSlot
+                  ? this._t("ui.addWine.nextOpenSlotHint", { row: nextSlot.row + 1, col: nextSlot.col + 1 })
+                  : this._t("ui.addWine.gridFull")}
               </div>
             `
           : nothing}
@@ -1558,17 +1567,37 @@ export class AddWineDialog extends LitElement {
     `;
   }
 
+  // A cleared input is null, not NaN, so "blank" means one thing.
+  private _parsePos(value: string): number | null {
+    const n = parseInt(value);
+    return isNaN(n) ? null : n - 1;
+  }
+
   private _onLocationNext() {
-    const d = this._wineData;
+    let d = this._wineData;
+    const cabinet = this.cabinets.find((c) => c.id === d.cabinet_id);
+    const blank = (v: number | null | undefined) => v == null || isNaN(v);
+
+    // Rack picked but no position given: take the next open grid slot,
+    // since the user has no way to see from here which ones are free.
+    if (cabinet && !d.zone && blank(d.row) && blank(d.col)) {
+      const slot = nextOpenSlot(cabinet, this.wines);
+      if (!slot) {
+        this._error = this._t("ui.addWine.gridFull");
+        return;
+      }
+      d = { ...d, row: slot.row, col: slot.col };
+      this._wineData = d;
+    }
+
     // A cabinet with no zone and no complete row/col is a wine with no
     // findable position — it silently vanishes (assigned to the cabinet,
     // but rendered nowhere). Catch that here instead of at save time.
-    if (d.cabinet_id && !d.zone && (d.row == null || d.col == null || isNaN(d.row) || isNaN(d.col))) {
+    if (d.cabinet_id && !d.zone && (blank(d.row) || blank(d.col))) {
       this._error = this._t("ui.addWine.pickZoneOrRowCol");
       return;
     }
 
-    const cabinet = this.cabinets.find((c) => c.id === d.cabinet_id);
     if (cabinet && !d.zone && d.row != null && d.col != null) {
       if (d.row < 0 || d.row >= cabinet.rows || d.col < 0 || d.col >= cabinet.cols) {
         this._error = this._t("ui.addWine.slotOutside", { cabinet: cabinet.name, rows: cabinet.rows, cols: cabinet.cols });

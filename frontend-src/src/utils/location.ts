@@ -162,6 +162,28 @@ export function placementIn(
   };
 }
 
+// The grid slot a bottle should take when the user picked a rack but no
+// position: the first empty slot in reading order, so it doesn't end up
+// stacked behind some other wine, or failing that the first slot with depth
+// left. Null when the grid is full.
+export function nextOpenSlot(
+  cabinet: Cabinet | undefined,
+  wines: Wine[]
+): { row: number; col: number } | null {
+  if (!cabinet) return null;
+  let partial: { row: number; col: number } | null = null;
+  for (const s of getRackSlots(cabinet)) {
+    const usage = containerUsage(
+      { cabinetId: cabinet.id, kind: "slot", zone: "", row: s.row, col: s.col },
+      cabinet,
+      wines
+    );
+    if (usage.used === 0) return s;
+    if (!usage.full && !partial) partial = s;
+  }
+  return partial;
+}
+
 // Where each of `count` identical bottles would land, given a chosen
 // destination. Returns fewer entries than asked when the destination runs out
 // of room, so the caller can clamp rather than silently dropping bottles.
