@@ -14,6 +14,15 @@ A custom Home Assistant integration and Lovelace card for managing a wine collec
 
 ## What's new
 
+### v2.26
+- **Your own card background**: upload a photo in Settings and the card paints it behind every view. Racks are now translucent so the picture shows through. With no photo set, the card uses your theme's wallpaper, and it looks the same on *All Sections* as on a single rack.
+- **Next open slot**: in Add Wine, pick a rack and leave Row/Column blank. The bottle goes to the next free grid slot (empty slots first, then ones with depth left), and the dialog shows which slot that will be.
+- **Delete permanently**: *Remove* now has a two-tap *Delete permanently* option for mistakes and test entries. The bottle is deleted outright and doesn't go to History. You can also delete a single History entry for good.
+- **Floating mode banner**: while you copy, move or add to the Buy List, a pill stays at the bottom of the screen with a *Cancel* button, so you can always get out even after scrolling.
+- **Tidier wine detail**: *Edit* sits with *Vivino / AI* and *Label*, *Drink* has a card of its own, and the photo's camera and trash buttons only show while you're editing.
+- **Polish**: type chips drop the extra coloured dot, Inventory controls line up on the right, *Manage Racks* and *Settings* match the other tabs, and *Pairings* gets its own plum button.
+
+### v2.23 – v2.24
 - **Glass UI**: frosted, readable pop-ups that work under any theme, including "liquid glass" themes. Wine-type chips are colour-coded, every dialog has the same close button, and dialogs fit a phone screen without zoom-on-focus or sideways scrolling.
 - **Drink button & tasting log**: drink a bottle from its detail view, rate it, jot notes, and tick *Buy again* to put it on your Buy List. History shows it all, with a *Buy again only* filter.
 - **Pairings finder**: pick what you're eating (beef, seafood, cheese…) and see the bottles that go with it.
@@ -30,31 +39,39 @@ A custom Home Assistant integration and Lovelace card for managing a wine collec
 - **Rack styles**: each rack is a *Classic grid*, *Shelf (Front/Back)* (fridge shelves with independent front and back lane counts), *Staggered Shelf* (quinconce rows that nest into the gaps of the row below, as above a fridge's compressor bump), *Bulk Bin* or *Wine Box*. You can add a **secondary zone** of any style above or below the main one.
 - **Deep racks**: grids can be 1–6 bottles deep. Tap a deep cell to open a side panel listing every bottle front to back.
 - **Visual rack editor**: live preview, stepper controls and per-rack sensors, for racks up to 20×20.
-- **Drag & drop**: drag on desktop or long-press on mobile. Bottles swap if the target is occupied. **Move**, **Copy** (for multi-bottle purchases) and **Unassign** are in the detail view.
+- **Drag & drop**: drag on desktop or long-press on mobile. Bottles swap if the target is occupied. **Move**, **Copy** (for multi-bottle purchases) and **Unassign** are in the detail view. While you move or copy a bottle, a floating banner at the bottom of the screen shows what you're placing and lets you cancel.
+- **Card background**: by default the card uses your theme's wallpaper, softly blurred. You can upload your own photo in Settings. Racks are translucent, so the background shows through.
 - **Tidy-ups**: the arrangement report spots scattered bottles of the same wine, mixed-type zones and similar clutter, and suggests a more logical layout.
 - **Stats bar**: bottle count, capacity, free slots, cellar value and gain/loss.
 - **Responsive**: separate layouts for phone, tablet and desktop, with touch-sized targets on coarse pointers.
 
-![Depth side panel](docs/screenshot-depth-panel.png)
+![Moving a bottle, with the floating banner](docs/screenshot-move-mode.png)
 
-![Rack editor](docs/screenshot-rack-editor.png)
+<p align="center">
+  <img src="docs/screenshot-depth-panel.png" width="49%" alt="Depth side panel">
+  <img src="docs/screenshot-rack-editor.png" width="49%" alt="Rack editor with shelf and staggered zones">
+</p>
 
 ### Wine Detail
-- **Drink**: a large button that archives the bottle as drunk, with an optional personal rating, notes and *Buy again*.
-- **Look up**: a *Vivino / AI* button re-checks the wine (it goes straight to Vivino when no AI provider is configured). *Label* re-reads a label photo, and *Reset text* clears descriptions stuck in the wrong language.
+- **Drink**: a large button on its own card that archives the bottle as drunk, with an optional personal rating, notes and *Buy again*.
+- **Look up & edit**: *Vivino / AI* re-checks the wine (it goes straight to Vivino when no AI provider is configured), *Label* re-reads a label photo, and *Edit* opens every field. The photo's camera and trash buttons appear only while you're editing. *Reset text* clears descriptions stuck in the wrong language.
+- **Remove or delete**: *Remove* asks why (Drank, Gifted, Sold, Broken, Spoiled, Other) and keeps the bottle in History. *Delete permanently* (two taps) is for mistakes and test entries, and leaves nothing in History.
 - **Drink window & peak**: Drink now / Hold / Past peak is recomputed from the drink window automatically. No AI call is needed.
 - **Chambering advice**: when a rack has a temperature sensor and you've set a room sensor, the dialog tells you how long to take the bottle out before serving, or to chill it. The estimate uses Newton's law of cooling toward the middle of the wine's serving range. Advice only appears once the bottle has sat in its rack long enough to match the sensor (24 h by default). Temperatures show in °F when Home Assistant uses US units.
 - **Critic scores**: AI estimates from Wine Spectator, Robert Parker, Jeb Dunnuck and Antonio Galloni, next to the Vivino community rating and your own half-star rating.
 - **Duplicates stay in sync**: refreshing or analysing one bottle updates every other bottle with the same name, winery and vintage. Location, price, purchase date and notes stay per-bottle.
 
-![Wine detail](docs/screenshot-wine-detail.png)
+<p align="center">
+  <img src="docs/screenshot-wine-detail.png" width="49%" alt="Wine detail">
+  <img src="docs/screenshot-remove-dialog.png" width="49%" alt="Remove a bottle or delete it permanently">
+</p>
 
 ### Inventory, History & Pairings
 - **Inventory**: search across name, winery, region, country, grape, vintage, barcode, notes and description. Sort by any field, filter by type chip, country, grape, cabinet, food pairing, rating, price and vintage range.
 - **Presets**: one tap for *Drink this year*, *Past peak*, *Not rated*, *Missing data* or *Added recently*.
 - **Inventory review**: re-check the whole cellar against Vivino's catalogue or the AI. Banners count the bottles missing pairings or a drink window, with one-tap *Fill from Vivino* / *Analyze with AI* buttons.
 - **Pairings**: pick a food category (icons and bottle counts) and the inventory filters to wines that pair with it.
-- **History & tasting log**: removed bottles are kept with their reason (Drank, Gifted, Sold, Broken, Spoiled, Other), your rating, notes and a *Buy again* flag. Entries can be restored or annotated later.
+- **History & tasting log**: removed bottles are kept with their reason (Drank, Gifted, Sold, Broken, Spoiled, Other), your rating, notes and a *Buy again* flag. Entries can be restored, annotated later, or deleted for good.
 - **Backup & export**: CSV export and import, JSON download and upload, and timestamped server backups (`config/wine_cellar_backups/`) with a restore picker. Bottle photos are stored on disk (`config/wine_cellar_photos/`) and travel inside backups.
 
 ![Inventory](docs/screenshot-inventory.png)
@@ -69,6 +86,7 @@ A custom Home Assistant integration and Lovelace card for managing a wine collec
 - **Recognize label**: one photo gives the AI everything it needs for a full sommelier read (name, winery, vintage, type, region, grape, drink window, description, price estimate, critic scores). A Vivino lookup runs in the background to add a rating and photo.
 - **Scan wine list**: photograph a restaurant list or a receipt. Every wine is extracted with critic scores, retail price and markup, best-value picks are highlighted, and an *In cellar* badge marks wines you already own. Add any of them to the cellar or the Buy List.
 - **Search by name** or **enter manually**. New bottles are auto-enriched from Vivino in the background.
+- **Placement**: Add Wine suggests racks where other bottles from the same winery already sit. If you pick a rack and leave Row/Column blank, the bottle goes to the next open slot, and the dialog shows which one.
 
 ![Add wine](docs/screenshot-add-wine.png)
 
