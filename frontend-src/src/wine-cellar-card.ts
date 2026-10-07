@@ -312,8 +312,19 @@ export class WineCellarCard extends LitElement {
       .header-row {
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px 16px;
         padding: 16px 16px 8px;
+      }
+
+      /* Cellar stats sit right beside the title, taking the free space so
+         the action buttons stay pushed to the right edge. */
+      .header-row .stats-bar {
+        flex: 1 1 auto;
+        flex-wrap: wrap;
+        gap: 4px 16px;
+        padding: 0;
+        min-width: 0;
       }
 
       .title {
@@ -337,6 +348,7 @@ export class WineCellarCard extends LitElement {
 
       .header-actions {
         display: flex;
+        margin-left: auto;
         gap: 4px;
         align-items: center;
         flex-wrap: wrap;
@@ -624,10 +636,11 @@ export class WineCellarCard extends LitElement {
           overflow: hidden;
           text-overflow: ellipsis;
         }
-        .stats-bar {
-          flex-wrap: wrap;
-          gap: 8px;
-          padding: 6px 12px;
+        /* Phone: title, then the stats on their own row, then the buttons. */
+        .header-row .stats-bar {
+          flex: 1 1 100%;
+          gap: 4px 12px;
+          padding: 0;
           font-size: 0.8em;
         }
         .cabinets-row {
@@ -2727,6 +2740,56 @@ export class WineCellarCard extends LitElement {
               <div>${title}</div>
             </div>
           </div>
+          <!-- Stats bar -->
+          ${this._stats
+            ? html`
+                <div class="stats-bar">
+                  <div class="stat">
+                    <span class="stat-value">${this._stats.total_bottles}</span>
+                    ${this._t("ui.card.statBottles")}
+                  </div>
+                  <div class="stat">
+                    <span class="stat-value">${this._stats.total_capacity}</span>
+                    ${this._t("ui.card.statCapacity")}
+                  </div>
+                  <div class="stat">
+                    <span class="stat-value">${this._stats.available_slots}</span>
+                    ${this._t("ui.card.statAvailable")}
+                  </div>
+                  ${this._stats.unplaced_bottles > 0
+                    ? html`
+                        <div class="stat" title="${this._t("ui.card.unplacedTitle")}">
+                          <span class="stat-value" style="color:#e65100">${this._stats.unplaced_bottles}</span>
+                          ${this._t("ui.card.statUnplaced")}
+                        </div>
+                      `
+                    : nothing}
+                  ${this._arrangementFindings.length
+                    ? html`
+                        <div
+                          class="stat stat-action"
+                          title="${this._t("ui.card.suggestionsTitle")}"
+                          @click=${() => (this._showArrangement = true)}
+                        >
+                          <span class="stat-value">🧹 ${this._arrangementFindings.length}</span>
+                          ${this._arrangementFindings.length === 1 ? this._t("ui.card.tidyUp") : this._t("ui.card.tidyUps")}
+                        </div>
+                      `
+                    : nothing}
+                  ${this._stats.total_value
+                    ? html`
+                        <div class="stat">
+                          <span class="stat-value">${this._metadataCurrency} ${this._stats.total_value.toLocaleString()}</span>
+                          ${this._t("ui.card.statValue")}
+                          ${this._stats.total_cost
+                            ? html`<span style="font-size:0.75em;color:${this._stats.total_value - this._stats.total_cost >= 0 ? '#2e7d32' : '#c62828'}">${this._stats.total_value - this._stats.total_cost >= 0 ? '+' : ''}${this._metadataCurrency} ${(this._stats.total_value - this._stats.total_cost).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</span>`
+                            : nothing}
+                        </div>
+                      `
+                    : nothing}
+                </div>
+              `
+            : nothing}
           <div class="header-actions">
             ${this._hasVivinoAccount ? html`
               <button
@@ -2805,57 +2868,6 @@ export class WineCellarCard extends LitElement {
               <div class="buy-list-banner">
                 <span>🛒 ${this._t("ui.card.buyListMoveBannerText", { name: this._movingBuyListItem.name })}</span>
                 <button @click=${() => (this._movingBuyListItem = null)}>✕ ${this._t("ui.common.cancel")}</button>
-              </div>
-            `
-          : nothing}
-
-        <!-- Stats bar -->
-        ${this._stats
-          ? html`
-              <div class="stats-bar">
-                <div class="stat">
-                  <span class="stat-value">${this._stats.total_bottles}</span>
-                  ${this._t("ui.card.statBottles")}
-                </div>
-                <div class="stat">
-                  <span class="stat-value">${this._stats.total_capacity}</span>
-                  ${this._t("ui.card.statCapacity")}
-                </div>
-                <div class="stat">
-                  <span class="stat-value">${this._stats.available_slots}</span>
-                  ${this._t("ui.card.statAvailable")}
-                </div>
-                ${this._stats.unplaced_bottles > 0
-                  ? html`
-                      <div class="stat" title="${this._t("ui.card.unplacedTitle")}">
-                        <span class="stat-value" style="color:#e65100">${this._stats.unplaced_bottles}</span>
-                        ${this._t("ui.card.statUnplaced")}
-                      </div>
-                    `
-                  : nothing}
-                ${this._arrangementFindings.length
-                  ? html`
-                      <div
-                        class="stat stat-action"
-                        title="${this._t("ui.card.suggestionsTitle")}"
-                        @click=${() => (this._showArrangement = true)}
-                      >
-                        <span class="stat-value">🧹 ${this._arrangementFindings.length}</span>
-                        ${this._arrangementFindings.length === 1 ? this._t("ui.card.tidyUp") : this._t("ui.card.tidyUps")}
-                      </div>
-                    `
-                  : nothing}
-                ${this._stats.total_value
-                  ? html`
-                      <div class="stat">
-                        <span class="stat-value">${this._metadataCurrency} ${this._stats.total_value.toLocaleString()}</span>
-                        ${this._t("ui.card.statValue")}
-                        ${this._stats.total_cost
-                          ? html`<span style="font-size:0.75em;color:${this._stats.total_value - this._stats.total_cost >= 0 ? '#2e7d32' : '#c62828'}">${this._stats.total_value - this._stats.total_cost >= 0 ? '+' : ''}${this._metadataCurrency} ${(this._stats.total_value - this._stats.total_cost).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}</span>`
-                          : nothing}
-                      </div>
-                    `
-                  : nothing}
               </div>
             `
           : nothing}
