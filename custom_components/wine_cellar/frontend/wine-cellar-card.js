@@ -1153,7 +1153,6 @@ var ui$1 = {
 		suggestionsTitle: "Suggestions read from where your bottles already are",
 		statBottles: "bottles",
 		statCapacity: "capacity",
-		statAvailable: "available",
 		statUnplaced: "unplaced",
 		statValue: "value",
 		tidyUp: "tidy-up",
@@ -2003,7 +2002,6 @@ var ui = {
 		suggestionsTitle: "Suggestions basées sur l'emplacement actuel de vos bouteilles",
 		statBottles: "bouteilles",
 		statCapacity: "capacité",
-		statAvailable: "disponible",
 		statUnplaced: "non placées",
 		statValue: "valeur",
 		tidyUp: "à ranger",
@@ -4287,7 +4285,7 @@ let CabinetGrid = class CabinetGrid extends i$1 {
             return A$1;
         return b$1 `
       <span class="zone-sensor-badge">
-        ${temp !== null ? b$1 `🌡️ ${temp}${this._tempUnit()}` : A$1}${temp !== null && humidity !== null ? " · " : A$1}${humidity !== null ? b$1 `💧 ${humidity}%` : A$1}
+        ${temp !== null ? b$1 `🌡️ ${temp.toFixed(1)}${this._tempUnit()}` : A$1}${temp !== null && humidity !== null ? " · " : A$1}${humidity !== null ? b$1 `💧 ${humidity.toFixed(1)}%` : A$1}
       </span>
     `;
     }
@@ -6404,6 +6402,19 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
         this.chamberingTimeConstantMinutes = 75;
         this.chamberingEquilibrationHours = 24;
     }
+    // Rack name on its own prominent line, the slot/zone underneath.
+    _renderLocation(wine) {
+        const loc = getWineLocation(wine, this.cabinets, this.hass?.language);
+        const rack = loc.cabinet ? loc.cabinet.name : loc.text;
+        const prefix = `${rack} · `;
+        const detail = loc.cabinet && loc.text.startsWith(prefix) ? loc.text.slice(prefix.length) : "";
+        return b$1 `
+      <div class="wine-location" title="${this._t('ui.wineDetail.tapToLocate')}" @click=${this._onLocate}>
+        <span class="wine-location-rack">📍 ${rack}</span>
+        ${detail ? b$1 `<span class="wine-location-detail">${detail}</span>` : A$1}
+      </div>
+    `;
+    }
     // Shorthand for t(key, this.hass?.language, params) — see wine-cellar-card.ts.
     _t(key, params) {
         return t$1(key, this.hass?.language, params);
@@ -7260,9 +7271,7 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
               </div>
               ${this.mode === "cellar"
             ? b$1 `
-                    <div class="wine-location" title="${this._t('ui.wineDetail.tapToLocate')}" @click=${this._onLocate}>
-                      📍 ${getWineLocation(wine, this.cabinets, this.hass?.language).text}
-                    </div>
+                    ${this._renderLocation(wine)}
                   `
             : A$1}
             </div>
@@ -7863,18 +7872,33 @@ WineDetailDialog.styles = [
 
       .wine-location {
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 3px;
-        width: 90px;
-        font-size: 0.68em;
-        line-height: 1.3;
+        gap: 1px;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 5px 6px;
+        border-radius: 8px;
+        background: var(--secondary-background-color, rgba(127, 127, 127, 0.12));
+        line-height: 1.25;
         text-align: center;
         color: var(--wc-text-secondary, #888);
         cursor: pointer;
+        overflow-wrap: anywhere;
       }
 
-      .wine-location:hover {
+      .wine-location-rack {
+        font-size: 0.95em;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+
+      .wine-location-detail {
+        font-size: 0.8em;
+      }
+
+      .wine-location:hover .wine-location-rack {
         color: var(--wc-primary-text);
         text-decoration: underline;
       }
@@ -21259,10 +21283,6 @@ let WineCellarCard = class WineCellarCard extends i$1 {
                   <div class="stat">
                     <span class="stat-value">${this._stats.total_capacity}</span>
                     ${this._t("ui.card.statCapacity")}
-                  </div>
-                  <div class="stat">
-                    <span class="stat-value">${this._stats.available_slots}</span>
-                    ${this._t("ui.card.statAvailable")}
                   </div>
                   ${this._stats.unplaced_bottles > 0
                 ? b$1 `

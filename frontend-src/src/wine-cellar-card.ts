@@ -2752,10 +2752,6 @@ export class WineCellarCard extends LitElement {
                     <span class="stat-value">${this._stats.total_capacity}</span>
                     ${this._t("ui.card.statCapacity")}
                   </div>
-                  <div class="stat">
-                    <span class="stat-value">${this._stats.available_slots}</span>
-                    ${this._t("ui.card.statAvailable")}
-                  </div>
                   ${this._stats.unplaced_bottles > 0
                     ? html`
                         <div class="stat" title="${this._t("ui.card.unplacedTitle")}">

@@ -863,7 +863,7 @@ export class CabinetGrid extends LitElement {
     if (temp === null && humidity === null) return nothing;
     return html`
       <span class="zone-sensor-badge">
-        ${temp !== null ? html`🌡️ ${temp}${this._tempUnit()}` : nothing}${temp !== null && humidity !== null ? " · " : nothing}${humidity !== null ? html`💧 ${humidity}%` : nothing}
+        ${temp !== null ? html`🌡️ ${temp.toFixed(1)}${this._tempUnit()}` : nothing}${temp !== null && humidity !== null ? " · " : nothing}${humidity !== null ? html`💧 ${humidity.toFixed(1)}%` : nothing}
       </span>
     `;
   }
