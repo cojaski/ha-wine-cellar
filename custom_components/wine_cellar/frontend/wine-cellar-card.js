@@ -1153,7 +1153,6 @@ var ui$1 = {
 		suggestionsTitle: "Suggestions read from where your bottles already are",
 		statBottles: "bottles",
 		statCapacity: "capacity",
-		statAvailable: "available",
 		statUnplaced: "unplaced",
 		statValue: "value",
 		tidyUp: "tidy-up",
@@ -2003,7 +2002,6 @@ var ui = {
 		suggestionsTitle: "Suggestions basées sur l'emplacement actuel de vos bouteilles",
 		statBottles: "bouteilles",
 		statCapacity: "capacité",
-		statAvailable: "disponible",
 		statUnplaced: "non placées",
 		statValue: "valeur",
 		tidyUp: "à ranger",
@@ -4287,7 +4285,7 @@ let CabinetGrid = class CabinetGrid extends i$1 {
             return A$1;
         return b$1 `
       <span class="zone-sensor-badge">
-        ${temp !== null ? b$1 `🌡️ ${temp}${this._tempUnit()}` : A$1}${temp !== null && humidity !== null ? " · " : A$1}${humidity !== null ? b$1 `💧 ${humidity}%` : A$1}
+        ${temp !== null ? b$1 `🌡️ ${temp.toFixed(1)}${this._tempUnit()}` : A$1}${temp !== null && humidity !== null ? " · " : A$1}${humidity !== null ? b$1 `💧 ${humidity.toFixed(1)}%` : A$1}
       </span>
     `;
     }
@@ -6404,6 +6402,19 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
         this.chamberingTimeConstantMinutes = 75;
         this.chamberingEquilibrationHours = 24;
     }
+    // Rack name on its own prominent line, the slot/zone underneath.
+    _renderLocation(wine) {
+        const loc = getWineLocation(wine, this.cabinets, this.hass?.language);
+        const rack = loc.cabinet ? loc.cabinet.name : loc.text;
+        const prefix = `${rack} · `;
+        const detail = loc.cabinet && loc.text.startsWith(prefix) ? loc.text.slice(prefix.length) : "";
+        return b$1 `
+      <div class="wine-location" title="${this._t('ui.wineDetail.tapToLocate')}" @click=${this._onLocate}>
+        <span class="wine-location-rack">📍 ${rack}</span>
+        ${detail ? b$1 `<span class="wine-location-detail">${detail}</span>` : A$1}
+      </div>
+    `;
+    }
     // Shorthand for t(key, this.hass?.language, params) — see wine-cellar-card.ts.
     _t(key, params) {
         return t$1(key, this.hass?.language, params);
@@ -7260,9 +7271,7 @@ let WineDetailDialog = class WineDetailDialog extends i$1 {
               </div>
               ${this.mode === "cellar"
             ? b$1 `
-                    <div class="wine-location" title="${this._t('ui.wineDetail.tapToLocate')}" @click=${this._onLocate}>
-                      📍 ${getWineLocation(wine, this.cabinets, this.hass?.language).text}
-                    </div>
+                    ${this._renderLocation(wine)}
                   `
             : A$1}
             </div>
@@ -7863,18 +7872,33 @@ WineDetailDialog.styles = [
 
       .wine-location {
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 3px;
-        width: 90px;
-        font-size: 0.68em;
-        line-height: 1.3;
+        gap: 1px;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 5px 6px;
+        border-radius: 8px;
+        background: var(--secondary-background-color, rgba(127, 127, 127, 0.12));
+        line-height: 1.25;
         text-align: center;
         color: var(--wc-text-secondary, #888);
         cursor: pointer;
+        overflow-wrap: anywhere;
       }
 
-      .wine-location:hover {
+      .wine-location-rack {
+        font-size: 0.95em;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+
+      .wine-location-detail {
+        font-size: 0.8em;
+      }
+
+      .wine-location:hover .wine-location-rack {
         color: var(--wc-primary-text);
         text-decoration: underline;
       }
@@ -21248,6 +21272,52 @@ let WineCellarCard = class WineCellarCard extends i$1 {
               <div>${title}</div>
             </div>
           </div>
+          <!-- Stats bar -->
+          ${this._stats
+            ? b$1 `
+                <div class="stats-bar">
+                  <div class="stat">
+                    <span class="stat-value">${this._stats.total_bottles}</span>
+                    ${this._t("ui.card.statBottles")}
+                  </div>
+                  <div class="stat">
+                    <span class="stat-value">${this._stats.total_capacity}</span>
+                    ${this._t("ui.card.statCapacity")}
+                  </div>
+                  ${this._stats.unplaced_bottles > 0
+                ? b$1 `
+                        <div class="stat" title="${this._t("ui.card.unplacedTitle")}">
+                          <span class="stat-value" style="color:#e65100">${this._stats.unplaced_bottles}</span>
+                          ${this._t("ui.card.statUnplaced")}
+                        </div>
+                      `
+                : A$1}
+                  ${this._arrangementFindings.length
+                ? b$1 `
+                        <div
+                          class="stat stat-action"
+                          title="${this._t("ui.card.suggestionsTitle")}"
+                          @click=${() => (this._showArrangement = true)}
+                        >
+                          <span class="stat-value">🧹 ${this._arrangementFindings.length}</span>
+                          ${this._arrangementFindings.length === 1 ? this._t("ui.card.tidyUp") : this._t("ui.card.tidyUps")}
+                        </div>
+                      `
+                : A$1}
+                  ${this._stats.total_value
+                ? b$1 `
+                        <div class="stat">
+                          <span class="stat-value">${this._metadataCurrency} ${this._stats.total_value.toLocaleString()}</span>
+                          ${this._t("ui.card.statValue")}
+                          ${this._stats.total_cost
+                    ? b$1 `<span style="font-size:0.75em;color:${this._stats.total_value - this._stats.total_cost >= 0 ? '#2e7d32' : '#c62828'}">${this._stats.total_value - this._stats.total_cost >= 0 ? '+' : ''}${this._metadataCurrency} ${(this._stats.total_value - this._stats.total_cost).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>`
+                    : A$1}
+                        </div>
+                      `
+                : A$1}
+                </div>
+              `
+            : A$1}
           <div class="header-actions">
             ${this._hasVivinoAccount ? b$1 `
               <button
@@ -21326,57 +21396,6 @@ let WineCellarCard = class WineCellarCard extends i$1 {
               <div class="buy-list-banner">
                 <span>🛒 ${this._t("ui.card.buyListMoveBannerText", { name: this._movingBuyListItem.name })}</span>
                 <button @click=${() => (this._movingBuyListItem = null)}>✕ ${this._t("ui.common.cancel")}</button>
-              </div>
-            `
-            : A$1}
-
-        <!-- Stats bar -->
-        ${this._stats
-            ? b$1 `
-              <div class="stats-bar">
-                <div class="stat">
-                  <span class="stat-value">${this._stats.total_bottles}</span>
-                  ${this._t("ui.card.statBottles")}
-                </div>
-                <div class="stat">
-                  <span class="stat-value">${this._stats.total_capacity}</span>
-                  ${this._t("ui.card.statCapacity")}
-                </div>
-                <div class="stat">
-                  <span class="stat-value">${this._stats.available_slots}</span>
-                  ${this._t("ui.card.statAvailable")}
-                </div>
-                ${this._stats.unplaced_bottles > 0
-                ? b$1 `
-                      <div class="stat" title="${this._t("ui.card.unplacedTitle")}">
-                        <span class="stat-value" style="color:#e65100">${this._stats.unplaced_bottles}</span>
-                        ${this._t("ui.card.statUnplaced")}
-                      </div>
-                    `
-                : A$1}
-                ${this._arrangementFindings.length
-                ? b$1 `
-                      <div
-                        class="stat stat-action"
-                        title="${this._t("ui.card.suggestionsTitle")}"
-                        @click=${() => (this._showArrangement = true)}
-                      >
-                        <span class="stat-value">🧹 ${this._arrangementFindings.length}</span>
-                        ${this._arrangementFindings.length === 1 ? this._t("ui.card.tidyUp") : this._t("ui.card.tidyUps")}
-                      </div>
-                    `
-                : A$1}
-                ${this._stats.total_value
-                ? b$1 `
-                      <div class="stat">
-                        <span class="stat-value">${this._metadataCurrency} ${this._stats.total_value.toLocaleString()}</span>
-                        ${this._t("ui.card.statValue")}
-                        ${this._stats.total_cost
-                    ? b$1 `<span style="font-size:0.75em;color:${this._stats.total_value - this._stats.total_cost >= 0 ? '#2e7d32' : '#c62828'}">${this._stats.total_value - this._stats.total_cost >= 0 ? '+' : ''}${this._metadataCurrency} ${(this._stats.total_value - this._stats.total_cost).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>`
-                    : A$1}
-                      </div>
-                    `
-                : A$1}
               </div>
             `
             : A$1}
@@ -22737,8 +22756,19 @@ WineCellarCard.styles = [
       .header-row {
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px 16px;
         padding: 16px 16px 8px;
+      }
+
+      /* Cellar stats sit right beside the title, taking the free space so
+         the action buttons stay pushed to the right edge. */
+      .header-row .stats-bar {
+        flex: 1 1 auto;
+        flex-wrap: wrap;
+        gap: 4px 16px;
+        padding: 0;
+        min-width: 0;
       }
 
       .title {
@@ -22762,6 +22792,7 @@ WineCellarCard.styles = [
 
       .header-actions {
         display: flex;
+        margin-left: auto;
         gap: 4px;
         align-items: center;
         flex-wrap: wrap;
@@ -23049,10 +23080,11 @@ WineCellarCard.styles = [
           overflow: hidden;
           text-overflow: ellipsis;
         }
-        .stats-bar {
-          flex-wrap: wrap;
-          gap: 8px;
-          padding: 6px 12px;
+        /* Phone: title, then the stats on their own row, then the buttons. */
+        .header-row .stats-bar {
+          flex: 1 1 100%;
+          gap: 4px 12px;
+          padding: 0;
           font-size: 0.8em;
         }
         .cabinets-row {

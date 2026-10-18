@@ -187,18 +187,33 @@ export class WineDetailDialog extends LitElement {
 
       .wine-location {
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 3px;
-        width: 90px;
-        font-size: 0.68em;
-        line-height: 1.3;
+        gap: 1px;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 5px 6px;
+        border-radius: 8px;
+        background: var(--secondary-background-color, rgba(127, 127, 127, 0.12));
+        line-height: 1.25;
         text-align: center;
         color: var(--wc-text-secondary, #888);
         cursor: pointer;
+        overflow-wrap: anywhere;
       }
 
-      .wine-location:hover {
+      .wine-location-rack {
+        font-size: 0.95em;
+        font-weight: 600;
+        color: var(--primary-text-color);
+      }
+
+      .wine-location-detail {
+        font-size: 0.8em;
+      }
+
+      .wine-location:hover .wine-location-rack {
         color: var(--wc-primary-text);
         text-decoration: underline;
       }
@@ -699,6 +714,20 @@ export class WineDetailDialog extends LitElement {
     `,
     touchStyles,
   ];
+
+  // Rack name on its own prominent line, the slot/zone underneath.
+  private _renderLocation(wine: Wine) {
+    const loc = getWineLocation(wine, this.cabinets, this.hass?.language);
+    const rack = loc.cabinet ? loc.cabinet.name : loc.text;
+    const prefix = `${rack} · `;
+    const detail = loc.cabinet && loc.text.startsWith(prefix) ? loc.text.slice(prefix.length) : "";
+    return html`
+      <div class="wine-location" title="${this._t('ui.wineDetail.tapToLocate')}" @click=${this._onLocate}>
+        <span class="wine-location-rack">📍 ${rack}</span>
+        ${detail ? html`<span class="wine-location-detail">${detail}</span>` : nothing}
+      </div>
+    `;
+  }
 
   // Shorthand for t(key, this.hass?.language, params) — see wine-cellar-card.ts.
   private _t(key: string, params?: Record<string, string | number>): string {
@@ -1551,9 +1580,7 @@ export class WineDetailDialog extends LitElement {
               </div>
               ${this.mode === "cellar"
                 ? html`
-                    <div class="wine-location" title="${this._t('ui.wineDetail.tapToLocate')}" @click=${this._onLocate}>
-                      📍 ${getWineLocation(wine, this.cabinets, this.hass?.language).text}
-                    </div>
+                    ${this._renderLocation(wine)}
                   `
                 : nothing}
             </div>
