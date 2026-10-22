@@ -19328,6 +19328,31 @@ let WineCellarCard = class WineCellarCard extends i$1 {
         this._highlightWineId = null;
         this._confirmZoneSort = false;
         this._zoneSorting = false;
+        // True while the URL already sits on pairings_hash and we've opened the
+        // picker for it, so closing the picker doesn't immediately reopen it on the
+        // next location event; cleared once the hash moves away (e.g. the pop-up
+        // closes), so the next visit opens it again.
+        this._pairingsHashHandled = false;
+        this._onLocationChanged = () => {
+            const raw = this._config?.pairings_hash?.trim();
+            if (!raw)
+                return;
+            const target = raw.startsWith("#") ? raw : `#${raw}`;
+            // Bubble Card and HA both run their own location handlers on the same
+            // event; read the hash after they have, not mid-dispatch.
+            requestAnimationFrame(() => {
+                if (window.location.hash === target) {
+                    if (!this._pairingsHashHandled) {
+                        this._pairingsHashHandled = true;
+                        this._inventoryPairing = true;
+                        this._showInventory = true;
+                    }
+                }
+                else {
+                    this._pairingsHashHandled = false;
+                }
+            });
+        };
         // The glass surfaces (see --wc-glass-* in styles) need to know whether the
         // theme is light or dark. The theme's own text colour is the honest answer:
         // hass.themes.darkMode is false for a dark-only custom theme, and a light
@@ -19347,8 +19372,16 @@ let WineCellarCard = class WineCellarCard extends i$1 {
     connectedCallback() {
         super.connectedCallback();
         window.addEventListener("unhandledrejection", this._onUnhandledRejection);
+        // HA's own navigate() uses history.pushState and announces it with a
+        // "location-changed" event (no "hashchange" fires); back/forward fire
+        // "popstate"; a plain link or typed URL fires "hashchange". Listen to all
+        // three so the pairings deep link works however the hash is reached.
+        window.addEventListener("location-changed", this._onLocationChanged);
+        window.addEventListener("popstate", this._onLocationChanged);
+        window.addEventListener("hashchange", this._onLocationChanged);
         this._loadData();
         this._subscribeToUpdates();
+        this._onLocationChanged();
     }
     updated(changed) {
         super.updated?.(changed);
@@ -19375,6 +19408,9 @@ let WineCellarCard = class WineCellarCard extends i$1 {
     disconnectedCallback() {
         super.disconnectedCallback();
         window.removeEventListener("unhandledrejection", this._onUnhandledRejection);
+        window.removeEventListener("location-changed", this._onLocationChanged);
+        window.removeEventListener("popstate", this._onLocationChanged);
+        window.removeEventListener("hashchange", this._onLocationChanged);
         // Invalidates any subscription still being set up.
         this._connectionGeneration++;
         this._unsubscribe?.();
